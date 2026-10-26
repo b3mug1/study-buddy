@@ -17,6 +17,7 @@ import {
   authenticatedApiRequest,
 } from "@/lib/api-client";
 import type { StudyGroup } from "@/lib/api-types";
+import { GroupCollaborationPanel } from "@/components/workspace/group-collaboration-panel";
 
 type CreatedGroup = { id: string };
 
@@ -601,6 +602,16 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
           </form>
         )}
       </section>
+
+      {group.is_member && (
+        <GroupCollaborationPanel
+          groupId={groupId}
+          groupName={group.name}
+          members={group.members}
+          ownerId={group.owner_id}
+          currentUserId={group.current_user_id}
+        />
+      )}
 
       {group.is_member && (
         <div className="mt-5 grid gap-5 lg:grid-cols-2">

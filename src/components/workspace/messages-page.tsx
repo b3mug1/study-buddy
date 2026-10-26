@@ -18,6 +18,7 @@ import {
   authenticatedApiRequest,
 } from "@/lib/api-client";
 import type { ChatMessage, Conversation } from "@/lib/api-types";
+import { SafetyActions } from "@/components/workspace/safety-actions";
 
 export function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -461,6 +462,14 @@ export function ConversationPage({
                         })}
                       </time>
                       {mine && <CheckCheck size={12} aria-label="Sent" />}
+                      {!mine && (
+                        <SafetyActions
+                          studentId={message.author_id}
+                          studentName={message.author_name}
+                          messageId={message.id}
+                          compact
+                        />
+                      )}
                       {mine && (
                         <button
                           type="button"

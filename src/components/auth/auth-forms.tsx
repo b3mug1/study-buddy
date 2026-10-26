@@ -52,7 +52,13 @@ async function authenticationRequest(
 }
 
 const emailSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
+  email: z
+    .string()
+    .trim()
+    .regex(
+      /^[0-9]{6}@astanait\.edu\.kz$/i,
+      "Enter your six-digit student ID as 123456@astanait.edu.kz.",
+    ),
 });
 const signInSchema = emailSchema.extend({
   password: z.string().min(8, "Password must be at least 8 characters."),
@@ -72,7 +78,6 @@ const passwordSchema = z
 
 type SignInValues = z.infer<typeof signInSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
-type EmailValues = z.infer<typeof emailSchema>;
 type PasswordValues = z.infer<typeof passwordSchema>;
 
 function StatusAlert({
@@ -189,7 +194,7 @@ export function LoginForm({
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="you@university.edu"
+              placeholder="123456@astanait.edu.kz"
               className="field-control pl-10"
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
@@ -203,17 +208,9 @@ export function LoginForm({
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-3">
-            <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Password
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-            >
-              Forgot password?
-            </Link>
-          </div>
+          <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Password
+          </label>
           <div className="relative">
             <Lock
               size={17}
@@ -283,15 +280,8 @@ export function RegisterForm() {
         email,
         password,
       });
-      setMessage({
-        text: "Account created! Setting up your session...",
-        tone: "success",
-      });
-      // Directly log in and proceed to onboarding or dashboard
-      setTimeout(() => {
-        router.replace("/onboarding");
-        router.refresh();
-      }, 600);
+      router.replace("/onboarding");
+      router.refresh();
     } catch (error) {
       setMessage({
         text:
@@ -351,7 +341,7 @@ export function RegisterForm() {
               id="reg-email"
               type="email"
               autoComplete="email"
-              placeholder="you@university.edu"
+              placeholder="123456@astanait.edu.kz"
               className="field-control pl-10"
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
@@ -415,89 +405,6 @@ export function RegisterForm() {
         </button>
       </form>
     </div>
-  );
-}
-
-export function ForgotPasswordForm() {
-  const [message, setMessage] = useState<{
-    text: string;
-    tone: "error" | "success";
-  } | null>(null);
-  const form = useForm<EmailValues>({ resolver: zodResolver(emailSchema) });
-
-  const submit = form.handleSubmit(async ({ email }) => {
-    setMessage(null);
-    try {
-      await authenticationRequest("forgot-password", { email });
-      setMessage({
-        text: "If an account exists for that email, a password reset link has been sent.",
-        tone: "success",
-      });
-    } catch (error) {
-      setMessage({
-        text:
-          error instanceof Error
-            ? error.message
-            : "Unable to process your request.",
-        tone: "error",
-      });
-    }
-  });
-
-  return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
-      {message && (
-        <StatusAlert tone={message.tone}>{message.text}</StatusAlert>
-      )}
-      <div className="space-y-1.5">
-        <label htmlFor="fp-email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          University email
-        </label>
-        <div className="relative">
-          <Mail
-            size={17}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <input
-            id="fp-email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@university.edu"
-            className="field-control pl-10"
-            aria-invalid={Boolean(form.formState.errors.email)}
-            {...form.register("email")}
-          />
-        </div>
-        {form.formState.errors.email && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.email.message}
-          </p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
-      >
-        {form.formState.isSubmitting ? (
-          <LoaderCircle className="animate-spin" size={18} aria-hidden="true" />
-        ) : (
-          "Send Reset Link"
-        )}
-      </button>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Remember your password?{" "}
-        <Link
-          href="/login"
-          className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-        >
-          Back to login
-        </Link>
-      </p>
-    </form>
   );
 }
 
@@ -616,15 +523,16 @@ export function VerifyEmailForm({ token }: { token: string }) {
     setBusy(true);
     setMessage(null);
     try {
-      if (token) {
-        await authenticationRequest("verify-email", { token });
+      if (!token) {
+        throw new Error("This verification link is missing its token.");
       }
+      await authenticationRequest("verify-email", { token });
       setMessage({
-        text: "Email verified successfully! Redirecting to login...",
+        text: "Email verified successfully! Redirecting to profile setup...",
         tone: "success",
       });
       setTimeout(() => {
-        router.replace("/login");
+        router.replace("/onboarding");
       }, 1000);
     } catch (error) {
       setMessage({

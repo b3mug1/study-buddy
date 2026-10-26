@@ -129,6 +129,14 @@ async function forward(
   const responseHeaders = new Headers();
   const apiContentType = apiResponse.headers.get("content-type");
   if (apiContentType) responseHeaders.set("Content-Type", apiContentType);
+  const contentDisposition = apiResponse.headers.get("content-disposition");
+  if (contentDisposition) {
+    responseHeaders.set("Content-Disposition", contentDisposition);
+  }
+  const contentTypeOptions = apiResponse.headers.get("x-content-type-options");
+  if (contentTypeOptions) {
+    responseHeaders.set("X-Content-Type-Options", contentTypeOptions);
+  }
   responseHeaders.set("Cache-Control", "no-store");
   const response = new NextResponse(
     apiResponse.status === 204 ? null : await apiResponse.arrayBuffer(),

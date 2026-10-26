@@ -29,6 +29,7 @@ type CalendarMonth = {
 
 export function SessionsPage() {
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [history, setHistory] = useState<StudySession[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -36,14 +37,17 @@ export function SessionsPage() {
   const [error, setError] = useState("");
   const [view, setView] = useState<"list" | "calendar">("list");
   const [calendar, setCalendar] = useState<CalendarMonth | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const load = useCallback(async () => {
     try {
-      const [sessionData, connectionData] = await Promise.all([
+      const [sessionData, connectionData, historyData] = await Promise.all([
         authenticatedApiJson<StudySession[]>("sessions?upcoming_only=true"),
         authenticatedApiJson<Connection[]>("connections"),
+        authenticatedApiJson<StudySession[]>("sessions/history?limit=30"),
       ]);
       setSessions(sessionData);
+      setHistory(historyData);
       setConnections(
         connectionData.filter((item) => item.status === "accepted"),
       );
@@ -62,6 +66,12 @@ export function SessionsPage() {
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setCurrentTime(Date.now()));
+    const refresh = window.setInterval(() => setCurrentTime(Date.now()), 30000);
+    return () => window.clearInterval(refresh);
+  }, []);
 
   async function createSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,6 +143,26 @@ export function SessionsPage() {
         cancelError instanceof Error
           ? cancelError.message
           : "Could not cancel this session.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function complete(sessionId: string) {
+    setBusyId(sessionId);
+    try {
+      await authenticatedApiRequest(`sessions/${sessionId}/complete`, {
+        method: "POST",
+        body: "{}",
+      });
+      toast.success("Study session marked as completed.");
+      await load();
+    } catch (completeError) {
+      toast.error(
+        completeError instanceof Error
+          ? completeError.message
+          : "Could not complete this session.",
       );
     } finally {
       setBusyId("");
@@ -349,6 +379,9 @@ export function SessionsPage() {
               );
               const myInvite = myParticipant?.status === "invited";
               const isOwner = session.owner_id === session.current_user_id;
+              const hasStarted =
+                currentTime > 0 &&
+                new Date(session.starts_at).getTime() <= currentTime;
               return (
                 <li key={session.id} className="surface p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -436,6 +469,15 @@ export function SessionsPage() {
                       <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                         Declined
                       </span>
+                    ) : isOwner && hasStarted ? (
+                      <button
+                        type="button"
+                        disabled={busyId === session.id}
+                        onClick={() => void complete(session.id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        <Check size={14} aria-hidden="true" /> Mark completed
+                      </button>
                     ) : isOwner ? (
                       <button
                         type="button"
@@ -451,6 +493,9 @@ export function SessionsPage() {
                       </span>
                     )}
                   </div>
+                  {hasStarted && myParticipant?.status === "accepted" && (
+                    <SessionOutcomeEditor session={session} onSaved={load} />
+                  )}
                 </li>
               );
             })}
@@ -469,7 +514,134 @@ export function SessionsPage() {
           </div>
         )}
       </section>
+
+      <section className="mt-7">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Recent study outcomes</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Record what the group learned and what to prepare next.
+            </p>
+          </div>
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {history.length}
+          </span>
+        </div>
+        {history.length ? (
+          <ul className="space-y-3">
+            {history.map((session) => (
+              <li
+                key={`${session.id}-${session.summary}-${session.next_steps}`}
+                className="surface p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold">
+                    {session.subject}: {session.topic}
+                  </h3>
+                  <time
+                    className="text-xs text-muted-foreground"
+                    dateTime={session.starts_at}
+                  >
+                    {new Date(session.starts_at).toLocaleDateString([], {
+                      dateStyle: "medium",
+                    })}
+                  </time>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Organized by {session.owner_name}
+                </p>
+                {session.participants.some(
+                  (participant) =>
+                    participant.status === "accepted" &&
+                    participant.student_id === session.current_user_id,
+                ) && <SessionOutcomeEditor session={session} onSaved={load} />}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="surface px-5 py-6 text-sm text-muted-foreground">
+            Completed sessions and their notes will appear here.
+          </div>
+        )}
+      </section>
     </main>
+  );
+}
+
+function SessionOutcomeEditor({
+  session,
+  onSaved,
+}: {
+  session: StudySession;
+  onSaved: () => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    setSaving(true);
+    try {
+      await authenticatedApiRequest(`sessions/${session.id}/outcome`, {
+        method: "PUT",
+        body: JSON.stringify({
+          summary: values.get("summary"),
+          next_steps: values.get("next_steps"),
+        }),
+      });
+      toast.success("Session notes saved.");
+      await onSaved();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not save the session notes.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => void save(event)}
+      className="mt-4 grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2"
+    >
+      <label className="text-xs font-semibold">
+        What did you study?
+        <textarea
+          name="summary"
+          defaultValue={session.summary}
+          maxLength={1200}
+          rows={3}
+          className="field-control mt-1.5 resize-y"
+          placeholder="Topics, exercises, or questions covered"
+        />
+      </label>
+      <label className="text-xs font-semibold">
+        Prepare for next time
+        <textarea
+          name="next_steps"
+          defaultValue={session.next_steps}
+          maxLength={1200}
+          rows={3}
+          className="field-control mt-1.5 resize-y"
+          placeholder="Tasks or topics for the next session"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={saving}
+        className="inline-flex h-9 items-center justify-center gap-2 justify-self-start rounded-xl border border-border px-3 text-xs font-semibold hover:bg-card disabled:opacity-50 sm:col-span-2"
+      >
+        {saving ? (
+          <LoaderCircle size={14} className="animate-spin" />
+        ) : (
+          <Check size={14} />
+        )}
+        Save session notes
+      </button>
+    </form>
   );
 }
 

@@ -177,6 +177,75 @@ export type StudySession = {
   study_format: "online" | "offline" | "hybrid";
   meeting_details: string;
   max_participants: number;
-  status: "scheduled" | "cancelled";
+  status: "scheduled" | "cancelled" | "completed";
+  summary: string;
+  next_steps: string;
   participants: SessionParticipant[];
+};
+
+export type GroupTask = {
+  id: string;
+  group_id: string;
+  created_by: string;
+  assigned_to: string | null;
+  title: string;
+  description: string;
+  status: "todo" | "in_progress" | "done";
+  due_at: string | null;
+  created_at: string;
+  updated_at: string;
+  creator_name?: string;
+  assignee_name?: string | null;
+};
+
+export type GroupMaterial = {
+  id: string;
+  group_id: string;
+  created_by: string;
+  title: string;
+  description: string;
+  source_url: string | null;
+  file_name: string | null;
+  has_file?: boolean;
+  created_at: string;
+  creator_name?: string;
+};
+
+export type GroupFocusSession = {
+  id: string;
+  group_id: string;
+  started_by: string;
+  started_by_name?: string;
+  focus_minutes: number;
+  break_minutes: number;
+  status: "running" | "completed" | "cancelled";
+  started_at: string;
+  ends_at: string;
+};
+
+export type StudyGoal = {
+  id: string;
+  subject: string;
+  target_sessions: number;
+  target_date: string | null;
+  completed_this_week?: number;
+  topics: StudyGoalTopic[];
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type StudyGoalTopic = {
+  id: string;
+  goal_id: string;
+  topic: string;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type BlockedStudent = {
+  student_id: string;
+  full_name: string;
+  major: string;
+  created_at: string;
 };

@@ -15,7 +15,6 @@ Python FastAPI
   ├── Argon2 password hashing
   ├── short-lived signed JWT access tokens
   ├── persisted, revocable refresh sessions
-  ├── SMTP email verification and password recovery
   └── parameterized PostgreSQL operations and ownership checks
         ↓
 Private PostgreSQL database
@@ -27,14 +26,17 @@ All database access is through the FastAPI service. Database values are paramete
 
 ## Database model and migrations
 
-[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. It also creates indexes, constraints, update timestamps, message notifications, cancellation notifications, and database write-rate limits.
+[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks.
 
 Apply the migration once to an empty PostgreSQL database:
 
 ```powershell
 $env:DATABASE_URL = "postgresql://study_buddy:your-password@localhost:5432/study_buddy"
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\001_initial.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\002_collaboration_features.sql
 ```
+
+If the database already has migration `001`, apply only `002_collaboration_features.sql` once.
 
 For production, run migrations with a migration/owner role, run FastAPI with a separate restricted role, allow that role only the required table/sequence/function privileges, and restrict incoming database connections to the API host.
 
@@ -42,39 +44,55 @@ For production, run migrations with a migration/owner role, run FastAPI with a s
 
 FastAPI API routes are under `/api/v1`. Protected routes use a bearer access token; the browser accesses them through the same-origin Next.js proxy.
 
-| Method         | Path                                               | Purpose                                                  |
-| -------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| `GET`          | `/health`                                          | Liveness                                                 |
-| `POST`         | `/api/v1/auth/register`                            | Create an account and send email verification            |
-| `POST`         | `/api/v1/auth/login`                               | Verify credentials and issue access/refresh tokens       |
-| `POST`         | `/api/v1/auth/verify-email`                        | Verify an email token                                    |
-| `POST`         | `/api/v1/auth/forgot-password`                     | Send a reset link                                        |
-| `POST`         | `/api/v1/auth/reset-password`                      | Set a new password and revoke old sessions               |
-| `POST`         | `/api/v1/auth/refresh`                             | Exchange a persisted refresh session for an access token |
-| `POST`         | `/api/v1/auth/logout`                              | Revoke a refresh session                                 |
-| `GET`          | `/api/v1/auth/me`                                  | Read the current user                                    |
-| `GET`, `PUT`   | `/api/v1/profile`                                  | Read or save the current student's profile               |
-| `GET`          | `/api/v1/dashboard`                                | Database-backed dashboard and recommendations            |
-| `GET`          | `/api/v1/discover`                                 | Search and rank discoverable students                    |
-| `GET`          | `/api/v1/students/{student_id}`                    | Read an authorized student profile                       |
-| `GET`, `POST`  | `/api/v1/connections`                              | List connections or send a request                       |
-| `POST`         | `/api/v1/connections/{connection_id}/respond`      | Accept or decline a request                              |
-| `GET`, `POST`  | `/api/v1/groups`                                   | Search or create groups                                  |
-| `GET`, `PATCH` | `/api/v1/groups/{group_id}`                        | Read or update a group                                   |
-| `POST`         | `/api/v1/groups/{group_id}/join`                   | Join a public group or request private access            |
-| `POST`         | `/api/v1/groups/requests/{request_id}/respond`     | Approve or decline a join request                        |
-| `DELETE`       | `/api/v1/groups/{group_id}/members/{student_id}`   | Leave or remove a group member                           |
-| `GET`          | `/api/v1/conversations`                            | List authorized conversations                            |
-| `GET`, `POST`  | `/api/v1/conversations/{conversation_id}/messages` | Read or send paginated messages                          |
-| `POST`         | `/api/v1/conversations/{conversation_id}/read`     | Mark conversation messages read                          |
-| `DELETE`       | `/api/v1/messages/{message_id}`                    | Delete the caller's own message                          |
-| `GET`          | `/api/v1/notifications`                            | Read notifications                                       |
-| `GET`          | `/api/v1/notifications/unread-count`               | Count unread notifications                               |
-| `PATCH`        | `/api/v1/notifications/{notification_id}/read`     | Mark one notification read                               |
-| `POST`         | `/api/v1/notifications/read-all`                   | Mark all notifications read                              |
-| `GET`, `POST`  | `/api/v1/sessions`                                 | List or create study sessions                            |
-| `POST`         | `/api/v1/sessions/{session_id}/invitation`         | Accept or decline an invitation                          |
-| `DELETE`       | `/api/v1/sessions/{session_id}`                    | Cancel a session as its owner                            |
+| Method                           | Path                                                     | Purpose                                                  |
+| -------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| `GET`                            | `/health`                                                | Liveness                                                 |
+| `POST`                           | `/api/v1/auth/register`                                  | Create an account and issue an access session            |
+| `POST`                           | `/api/v1/auth/login`                                     | Verify credentials and issue access/refresh tokens       |
+| `POST`                           | `/api/v1/auth/verify-email`                              | Redeem a previously issued email token                   |
+| `POST`                           | `/api/v1/auth/forgot-password`                           | Disabled; returns `501` because outbound email is off    |
+| `POST`                           | `/api/v1/auth/reset-password`                            | Redeem a previously issued password-reset token          |
+| `POST`                           | `/api/v1/auth/refresh`                                   | Exchange a persisted refresh session for an access token |
+| `POST`                           | `/api/v1/auth/logout`                                    | Revoke a refresh session                                 |
+| `GET`                            | `/api/v1/auth/me`                                        | Read the current user                                    |
+| `GET`, `PUT`                     | `/api/v1/profile`                                        | Read or save the current student's profile               |
+| `GET`                            | `/api/v1/dashboard`                                      | Database-backed dashboard and recommendations            |
+| `GET`                            | `/api/v1/discover`                                       | Search and rank discoverable students                    |
+| `GET`                            | `/api/v1/students/{student_id}`                          | Read an authorized student profile                       |
+| `GET`, `POST`                    | `/api/v1/connections`                                    | List connections or send a request                       |
+| `POST`                           | `/api/v1/connections/{connection_id}/respond`            | Accept or decline a request                              |
+| `GET`, `POST`                    | `/api/v1/groups`                                         | Search or create groups                                  |
+| `GET`, `PATCH`                   | `/api/v1/groups/{group_id}`                              | Read or update a group                                   |
+| `POST`                           | `/api/v1/groups/{group_id}/join`                         | Join a public group or request private access            |
+| `POST`                           | `/api/v1/groups/requests/{request_id}/respond`           | Approve or decline a join request                        |
+| `DELETE`                         | `/api/v1/groups/{group_id}/members/{student_id}`         | Leave or remove a group member                           |
+| `GET`, `POST`                    | `/api/v1/groups/{group_id}/tasks`                        | List or create group tasks                               |
+| `PATCH`, `DELETE`                | `/api/v1/groups/{group_id}/tasks/{task_id}`              | Update status or remove a group task                     |
+| `GET`, `POST`                    | `/api/v1/groups/{group_id}/materials`                    | List or add shared links, notes, and files (5 MB max)    |
+| `GET`                            | `/api/v1/groups/{group_id}/materials/{material_id}/file` | Download a private group file                            |
+| `DELETE`                         | `/api/v1/groups/{group_id}/materials/{material_id}`      | Remove a shared material                                 |
+| `GET`, `POST`                    | `/api/v1/groups/{group_id}/focus`                        | Read or start the shared Pomodoro timer                  |
+| `POST`                           | `/api/v1/groups/{group_id}/focus/{focus_id}/finish`      | Finish the shared focus session                          |
+| `GET`, `POST`, `PATCH`, `DELETE` | `/api/v1/goals`                                          | Manage personal weekly study goals                       |
+| `POST`                           | `/api/v1/goals/{goal_id}/topics`                         | Add a topic to a study goal                              |
+| `PATCH`, `DELETE`                | `/api/v1/goals/{goal_id}/topics/{topic_id}`              | Mark a topic complete or remove it                       |
+| `GET`                            | `/api/v1/progress`                                       | Read completed sessions and weekly progress              |
+| `GET`, `POST`, `DELETE`          | `/api/v1/safety/blocks`                                  | Manage blocked students                                  |
+| `POST`                           | `/api/v1/safety/reports`                                 | Report a profile or a message                            |
+| `GET`                            | `/api/v1/sessions/history`                               | List completed sessions and their notes                  |
+| `POST`                           | `/api/v1/sessions/{session_id}/complete`                 | Mark a session as conducted                              |
+| `PUT`                            | `/api/v1/sessions/{session_id}/outcome`                  | Save shared session notes and next steps                 |
+| `GET`                            | `/api/v1/conversations`                                  | List authorized conversations                            |
+| `GET`, `POST`                    | `/api/v1/conversations/{conversation_id}/messages`       | Read or send paginated messages                          |
+| `POST`                           | `/api/v1/conversations/{conversation_id}/read`           | Mark conversation messages read                          |
+| `DELETE`                         | `/api/v1/messages/{message_id}`                          | Delete the caller's own message                          |
+| `GET`                            | `/api/v1/notifications`                                  | Read notifications                                       |
+| `GET`                            | `/api/v1/notifications/unread-count`                     | Count unread notifications                               |
+| `PATCH`                          | `/api/v1/notifications/{notification_id}/read`           | Mark one notification read                               |
+| `POST`                           | `/api/v1/notifications/read-all`                         | Mark all notifications read                              |
+| `GET`, `POST`                    | `/api/v1/sessions`                                       | List or create study sessions                            |
+| `POST`                           | `/api/v1/sessions/{session_id}/invitation`               | Accept or decline an invitation                          |
+| `DELETE`                         | `/api/v1/sessions/{session_id}`                          | Cancel a session as its owner                            |
 
 FastAPI OpenAPI docs are at `http://localhost:8000/docs`.
 
@@ -109,7 +127,6 @@ e2e/                      Playwright UI/API smoke tests
 - Python 3.12+
 - PostgreSQL 15+
 - npm and `psql`
-- An SMTP account for verification and password reset emails
 
 1. Install frontend dependencies:
 
@@ -127,7 +144,7 @@ e2e/                      Playwright UI/API smoke tests
 
 3. Create an empty local database/user and apply the migration.
 
-4. Copy `.env.example` to `.env.local`, set the private PostgreSQL connection, generate a random JWT secret, and configure SMTP:
+4. Copy `.env.example` to `.env.local`, set the private PostgreSQL connection, and generate a random JWT secret:
 
    ```powershell
    python -c "import secrets; print(secrets.token_urlsafe(48))"
@@ -140,17 +157,11 @@ e2e/                      Playwright UI/API smoke tests
    JWT_SECRET_KEY=replace-with-generated-random-value
    API_URL=http://localhost:8000
    NEXT_PUBLIC_API_URL=http://localhost:8000
-   FRONTEND_URL=http://localhost:3000
-   CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
-   SMTP_HOST=smtp.example.com
-   SMTP_PORT=587
-   SMTP_USERNAME=your-smtp-username
-   SMTP_PASSWORD=your-smtp-password
-   SMTP_FROM_EMAIL=study-buddy@example.com
-   SMTP_USE_TLS=true
+   FRONTEND_URL=http://localhost:1000
+   CORS_ORIGINS=["http://localhost:1000","http://127.0.0.1:1000"]
    ```
 
-   SMTP credentials and `DATABASE_URL` are server-only. Do not prefix them with `NEXT_PUBLIC_`.
+   `DATABASE_URL` and `JWT_SECRET_KEY` are server-only. Do not prefix them with `NEXT_PUBLIC_`.
 
 5. Start the API and frontend in separate terminals:
 
@@ -159,7 +170,9 @@ e2e/                      Playwright UI/API smoke tests
    npm run dev
    ```
 
-6. Open `http://localhost:3000`. Registration sends an email verification link; sign-in is enabled after verification.
+6. Open `http://localhost:1000`. Registration creates the account and signs the student in immediately.
+
+Registration accepts student addresses in the form `123456@astanait.edu.kz`, where the local part is exactly six digits. The app checks the address format but does not verify that the student owns the mailbox. Email-based password recovery is disabled.
 
 ## Validation
 
@@ -174,17 +187,16 @@ npm run format:check
 npm run build
 ```
 
-Unit/API tests cover profile validation, match-score calculations, and rejection of unauthenticated API calls. Playwright covers the public UI, mobile overflow, client-side validation, and API auth rejection. Authenticated database workflows require a running PostgreSQL instance and SMTP testing account.
+Unit/API tests cover profile validation, match-score calculations, and rejection of unauthenticated API calls. Playwright covers the public UI, mobile overflow, client-side validation, and API auth rejection. Authenticated database workflows require a running PostgreSQL instance.
 
 ## Deployment and operational security
 
-Deploy Next.js and FastAPI to trusted hosts and PostgreSQL to a private managed or self-hosted database. Set `API_URL` on the Next.js server, `NEXT_PUBLIC_API_URL` to the reachable HTTPS API origin for WebSockets, and set `DATABASE_URL`, `JWT_SECRET_KEY`, `FRONTEND_URL`, CORS origins, and SMTP values on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers. Keep verification/reset tokens short-lived and single-use.
-
-Email verification and recovery links are delivered by the configured SMTP provider. Without valid SMTP settings, registration and reset-email requests return a visible configuration/delivery error; no successful fake fallback is used.
+Deploy Next.js and FastAPI to trusted hosts and PostgreSQL to a private managed or self-hosted database. Set `API_URL` and `FRONTEND_URL` on the Next.js server, `NEXT_PUBLIC_API_URL` to the reachable HTTPS API origin for WebSockets, and set `DATABASE_URL`, `JWT_SECRET_KEY`, and CORS origins on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
 
 ## Current limitations
 
 - PostgreSQL must be provisioned and the migration applied before persistent routes work.
 - Messages use PostgreSQL `LISTEN/NOTIFY` over ticket-authorized WebSockets, with a polling fallback when the WebSocket endpoint is not reachable.
-- A production SMTP provider and a private PostgreSQL deployment are external setup requirements.
+- Email ownership checks and email-based password recovery are unavailable without an outbound mail service.
+- A private PostgreSQL deployment is an external setup requirement.
 - Avatar upload, calendar provider integrations, and authenticated database-backed E2E fixtures are not included.

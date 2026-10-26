@@ -37,7 +37,7 @@ def test_auth_schemas_validate_email_and_password_length() -> None:
             password="a sufficiently long password",
         )
     with pytest.raises(ValueError):
-        LoginRequest(email="alex@example.edu", password="short")
+        LoginRequest(email="123456@astanait.edu.kz", password="short")
 
 
 def test_passwords_are_argon2_hashed_not_stored_as_plain_text() -> None:

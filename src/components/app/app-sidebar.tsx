@@ -5,11 +5,13 @@ import {
   BookOpenCheck,
   CalendarDays,
   Compass,
+  ShieldCheck,
   LayoutDashboard,
   LogOut,
   MessageCircle,
   UsersRound,
   UserRoundPlus,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,7 +26,9 @@ const availableLinks = [
   { href: "/groups", label: "Study groups", icon: UsersRound },
   { href: "/messages", label: "Messages", icon: MessageCircle },
   { href: "/sessions", label: "Study sessions", icon: CalendarDays },
+  { href: "/progress", label: "Study progress", icon: TrendingUp },
   { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/safety", label: "Community safety", icon: ShieldCheck },
   { href: "/settings/profile", label: "My profile", icon: BookOpenCheck },
 ];
 
@@ -81,7 +85,10 @@ export function AppSidebar({
           <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-md shadow-indigo-500/20">
             <BookOpenCheck size={18} aria-hidden="true" />
           </span>
-          <span className="text-base font-bold tracking-tight">Study<span className="text-indigo-600 dark:text-indigo-400">Buddy</span></span>
+          <span className="text-base font-bold tracking-tight">
+            Study
+            <span className="text-indigo-600 dark:text-indigo-400">Buddy</span>
+          </span>
         </Link>
 
         {/* Navigation */}
@@ -106,7 +113,13 @@ export function AppSidebar({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
-                <Icon size={17} className={active ? "text-indigo-600 dark:text-indigo-400" : ""} aria-hidden="true" />
+                <Icon
+                  size={17}
+                  className={
+                    active ? "text-indigo-600 dark:text-indigo-400" : ""
+                  }
+                  aria-hidden="true"
+                />
                 {label}
               </Link>
             );
@@ -123,7 +136,9 @@ export function AppSidebar({
               <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card bg-emerald-500" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-foreground">{fullName}</p>
+              <p className="truncate text-xs font-bold text-foreground">
+                {fullName}
+              </p>
               <p className="truncate text-[11px] text-muted-foreground">
                 {university}
               </p>
@@ -145,14 +160,16 @@ export function AppSidebar({
       {/* Mobile Header */}
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 px-4 py-3 backdrop-blur md:hidden">
         <div className="flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold"
-          >
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold">
             <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-md">
               <BookOpenCheck size={16} aria-hidden="true" />
             </span>
-            <span className="text-sm font-bold tracking-tight">Study<span className="text-indigo-600 dark:text-indigo-400">Buddy</span></span>
+            <span className="text-sm font-bold tracking-tight">
+              Study
+              <span className="text-indigo-600 dark:text-indigo-400">
+                Buddy
+              </span>
+            </span>
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

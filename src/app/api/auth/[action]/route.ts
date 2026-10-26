@@ -52,7 +52,6 @@ export async function POST(
     register: "register",
     login: "login",
     "verify-email": "verify-email",
-    "resend-verification": "resend-verification",
     "forgot-password": "forgot-password",
     "reset-password": "reset-password",
     logout: "logout",

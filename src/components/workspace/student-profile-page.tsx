@@ -17,6 +17,7 @@ import {
   authenticatedApiRequest,
 } from "@/lib/api-client";
 import type { DiscoverableStudent } from "@/lib/api-types";
+import { SafetyActions } from "@/components/workspace/safety-actions";
 
 const BREAKDOWN_LABELS = [
   ["subjects", "Shared subjects", "40%"],
@@ -191,6 +192,8 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </div>
         </div>
       </section>
+
+      <SafetyActions studentId={student.id} studentName={student.full_name} />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="surface p-5 sm:p-6">

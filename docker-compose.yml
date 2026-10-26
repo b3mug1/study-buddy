@@ -26,18 +26,15 @@ services:
     environment:
       DATABASE_URL: postgresql://study_buddy:${DB_PASSWORD:-changeme}@db:5432/study_buddy
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3002}
-      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3002","http://127.0.0.1:3002"]}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
-      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:1000","http://127.0.0.1:1000"]}
     ports:
       - "8002:8000"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8000/health'')"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,9 +52,9 @@ services:
     environment:
       API_URL: http://api:8000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8002}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3002}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:1000}
     ports:
-      - "3002:3000"
+      - "1000:1000"
 
 volumes:
   postgres_data:

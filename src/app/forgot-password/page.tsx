@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { ForgotPasswordForm } from "@/components/auth/auth-forms";
 
 export const metadata: Metadata = { title: "Reset your password" };
 
@@ -8,10 +8,15 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell
       eyebrow="Account recovery"
-      title="Let’s get you back in."
-      description="Enter the email address on your account and we’ll send you a secure reset link."
+      title="Password reset is unavailable."
+      description="This app does not send recovery emails. Contact the app administrator for help resetting your password."
     >
-      <ForgotPasswordForm />
+      <Link
+        href="/login"
+        className="block text-center text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+      >
+        Back to sign in
+      </Link>
     </AuthShell>
   );
 }
