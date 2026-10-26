@@ -1,0 +1,589 @@
+"use client";
+
+import {
+  CalendarDays,
+  CalendarClock,
+  CalendarPlus,
+  Check,
+  Clock3,
+  LoaderCircle,
+  MapPin,
+  Video,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  authenticatedApiJson,
+  authenticatedApiRequest,
+} from "@/lib/api-client";
+import type { Connection, StudySession } from "@/lib/api-types";
+
+type CalendarMonth = {
+  year: number;
+  month: number;
+  label: string;
+  leadingDays: number;
+  totalDays: number;
+};
+
+export function SessionsPage() {
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const [calendar, setCalendar] = useState<CalendarMonth | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [sessionData, connectionData] = await Promise.all([
+        authenticatedApiJson<StudySession[]>("sessions?upcoming_only=true"),
+        authenticatedApiJson<Connection[]>("connections"),
+      ]);
+      setSessions(sessionData);
+      setConnections(
+        connectionData.filter((item) => item.status === "accepted"),
+      );
+      setError("");
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load study sessions.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, [load]);
+
+  async function createSession(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    setCreating(true);
+    const form = new FormData(formElement);
+    const localStart = String(form.get("starts_at") ?? "");
+    const invitedUserIds = form
+      .getAll("invited_user_ids")
+      .map((value) => String(value));
+    try {
+      await authenticatedApiJson<{ id: string }>("sessions", {
+        method: "POST",
+        body: JSON.stringify({
+          subject: form.get("subject"),
+          topic: form.get("topic"),
+          starts_at: new Date(localStart).toISOString(),
+          duration_minutes: Number(form.get("duration_minutes")),
+          study_format: form.get("study_format"),
+          meeting_details: form.get("meeting_details"),
+          max_participants: Math.max(2, invitedUserIds.length + 1),
+          invited_user_ids: invitedUserIds,
+        }),
+      });
+      toast.success("Study session scheduled.");
+      formElement.reset();
+      await load();
+    } catch (createError) {
+      toast.error(
+        createError instanceof Error
+          ? createError.message
+          : "Could not schedule this study session.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function respond(sessionId: string, accept: boolean) {
+    setBusyId(sessionId);
+    try {
+      await authenticatedApiRequest(`sessions/${sessionId}/invitation`, {
+        method: "POST",
+        body: JSON.stringify({ accept }),
+      });
+      toast.success(accept ? "You’re in." : "Invitation declined.");
+      await load();
+    } catch (responseError) {
+      toast.error(
+        responseError instanceof Error
+          ? responseError.message
+          : "Could not update this invitation.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function cancel(sessionId: string) {
+    setBusyId(sessionId);
+    try {
+      await authenticatedApiRequest(`sessions/${sessionId}`, {
+        method: "DELETE",
+      });
+      toast.success("Study session cancelled.");
+      await load();
+    } catch (cancelError) {
+      toast.error(
+        cancelError instanceof Error
+          ? cancelError.message
+          : "Could not cancel this session.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  function showCalendar() {
+    const anchor = sessions[0] ? new Date(sessions[0].starts_at) : new Date();
+    setCalendar(makeCalendarMonth(anchor));
+    setView("calendar");
+  }
+
+  function shiftCalendarMonth(offset: number) {
+    if (!calendar) return;
+    setCalendar(
+      makeCalendarMonth(new Date(calendar.year, calendar.month + offset, 1)),
+    );
+  }
+
+  const connectedStudents = connections;
+
+  return (
+    <main>
+      <div>
+        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+          Make a plan, learn together
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+          Study sessions
+        </h1>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Schedule a session, invite connected students, and manage responses in
+          one place.
+        </p>
+      </div>
+
+      <section className="surface mt-7 p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+            <CalendarPlus size={19} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="font-semibold">Plan a study session</h2>
+            <p className="text-xs text-muted-foreground">
+              Choose a timezone-aware start time and invite your connections.
+            </p>
+          </div>
+        </div>
+        <form
+          onSubmit={(event) => void createSession(event)}
+          className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <label className="text-sm font-medium">
+            Subject
+            <input
+              name="subject"
+              required
+              maxLength={80}
+              className="field-control mt-1.5"
+              placeholder="e.g. Biology"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Topic
+            <input
+              name="topic"
+              required
+              maxLength={160}
+              className="field-control mt-1.5"
+              placeholder="e.g. Cell membranes"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Date and time
+            <input
+              name="starts_at"
+              required
+              type="datetime-local"
+              min={localDateTimeMin()}
+              className="field-control mt-1.5"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Duration
+            <select
+              name="duration_minutes"
+              defaultValue="60"
+              className="field-control mt-1.5"
+            >
+              {[30, 45, 60, 90, 120, 180].map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {minutes} minutes
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium">
+            Study format
+            <select
+              name="study_format"
+              defaultValue="online"
+              className="field-control mt-1.5"
+            >
+              <option value="online">Online</option>
+              <option value="offline">In person</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium lg:col-span-2">
+            Invite connected students
+            <select
+              name="invited_user_ids"
+              multiple
+              className="field-control mt-1.5 min-h-28"
+            >
+              {connectedStudents.map((connection) => (
+                <option
+                  key={connection.student_id}
+                  value={connection.student_id}
+                >
+                  {connection.full_name} · {connection.major}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs font-normal text-muted-foreground">
+              Hold Ctrl (Windows) or Command (Mac) to choose several.
+            </span>
+          </label>
+          <label className="text-sm font-medium lg:col-span-2">
+            Meeting details
+            <textarea
+              name="meeting_details"
+              maxLength={1000}
+              rows={3}
+              className="field-control mt-1.5 resize-y"
+              placeholder="Meeting link, library room, or other details"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={creating}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 lg:col-span-4"
+          >
+            {creating ? (
+              <LoaderCircle
+                size={16}
+                className="animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <CalendarPlus size={16} aria-hidden="true" />
+            )}
+            {creating ? "Scheduling…" : "Schedule session"}
+          </button>
+        </form>
+      </section>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+        >
+          {error}
+        </p>
+      )}
+
+      <section className="mt-7">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Your upcoming sessions</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Times are shown in your device’s local timezone.
+            </p>
+          </div>
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {sessions.length}
+          </span>
+          <div className="ml-2 inline-flex rounded-xl border border-border p-1">
+            <button
+              type="button"
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "list" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200" : "text-muted-foreground"}`}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === "calendar"}
+              onClick={showCalendar}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "calendar" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200" : "text-muted-foreground"}`}
+            >
+              <CalendarDays size={14} aria-hidden="true" /> Calendar
+            </button>
+          </div>
+        </div>
+        {loading ? (
+          <div
+            className="surface h-48 animate-pulse bg-muted/60"
+            aria-label="Loading study sessions"
+          />
+        ) : view === "calendar" && calendar ? (
+          <SessionCalendar
+            sessions={sessions}
+            calendar={calendar}
+            onShiftMonth={shiftCalendarMonth}
+          />
+        ) : sessions.length ? (
+          <ul className="space-y-3">
+            {sessions.map((session) => {
+              const myParticipant = session.participants.find(
+                (participant) =>
+                  participant.student_id === session.current_user_id,
+              );
+              const myInvite = myParticipant?.status === "invited";
+              const isOwner = session.owner_id === session.current_user_id;
+              return (
+                <li key={session.id} className="surface p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div className="grid min-w-20 place-items-center rounded-2xl bg-indigo-50 px-3 py-3 text-center text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                      <span className="text-xs font-semibold uppercase">
+                        {new Date(session.starts_at).toLocaleDateString([], {
+                          month: "short",
+                        })}
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {new Date(session.starts_at).getDate()}
+                      </span>
+                      <span className="text-xs">
+                        {new Date(session.starts_at).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">
+                          {session.subject}: {session.topic}
+                        </h3>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                          {session.study_format}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Organized by {session.owner_name} ·{" "}
+                        {session.duration_minutes} minutes
+                      </p>
+                      {session.meeting_details && (
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-5 text-slate-600 dark:text-slate-300">
+                          {session.meeting_details}
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock3 size={14} aria-hidden="true" />
+                          {
+                            session.participants.filter(
+                              (participant) =>
+                                participant.status === "accepted",
+                            ).length
+                          }{" "}
+                          / {session.max_participants} attending
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          {session.study_format === "online" ? (
+                            <Video size={14} aria-hidden="true" />
+                          ) : (
+                            <MapPin size={14} aria-hidden="true" />
+                          )}
+                          {session.participants
+                            .filter(
+                              (participant) =>
+                                participant.status === "accepted",
+                            )
+                            .map((participant) => participant.full_name)
+                            .join(", ")}
+                        </span>
+                      </div>
+                    </div>
+                    {myInvite ? (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={busyId === session.id}
+                          onClick={() => void respond(session.id, false)}
+                          className="inline-flex h-9 items-center gap-1 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
+                        >
+                          <X size={14} aria-hidden="true" /> Decline
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId === session.id}
+                          onClick={() => void respond(session.id, true)}
+                          className="inline-flex h-9 items-center gap-1 rounded-xl bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                        >
+                          <Check size={14} aria-hidden="true" /> Accept
+                        </button>
+                      </div>
+                    ) : myParticipant?.status === "declined" ? (
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                        Declined
+                      </span>
+                    ) : isOwner ? (
+                      <button
+                        type="button"
+                        disabled={busyId === session.id}
+                        onClick={() => void cancel(session.id)}
+                        className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/40"
+                      >
+                        Cancel session
+                      </button>
+                    ) : (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+                        Accepted
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="surface flex min-h-48 flex-col items-center justify-center px-6 text-center">
+            <CalendarClock
+              size={24}
+              className="text-indigo-600 dark:text-indigo-400"
+              aria-hidden="true"
+            />
+            <h3 className="mt-3 font-semibold">No upcoming sessions</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Schedule a session and invite one of your connections.
+            </p>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function SessionCalendar({
+  sessions,
+  calendar,
+  onShiftMonth,
+}: {
+  sessions: StudySession[];
+  calendar: CalendarMonth;
+  onShiftMonth: (offset: number) => void;
+}) {
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const day = index - calendar.leadingDays + 1;
+    return day > 0 && day <= calendar.totalDays ? day : null;
+  });
+
+  return (
+    <section
+      className="surface p-4 sm:p-5"
+      aria-label={`${calendar.label} study session calendar`}
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onShiftMonth(-1)}
+          aria-label="Previous month"
+          className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
+        >
+          ←
+        </button>
+        <h3 className="font-semibold">{calendar.label}</h3>
+        <button
+          type="button"
+          onClick={() => onShiftMonth(1)}
+          aria-label="Next month"
+          className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
+        >
+          →
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
+          <div
+            key={weekday}
+            className="py-2 text-center text-xs font-semibold text-muted-foreground"
+          >
+            {weekday}
+          </div>
+        ))}
+        {cells.map((day, index) => {
+          const daySessions =
+            day === null
+              ? []
+              : sessions.filter((session) => {
+                  const date = new Date(session.starts_at);
+                  return (
+                    date.getFullYear() === calendar.year &&
+                    date.getMonth() === calendar.month &&
+                    date.getDate() === day
+                  );
+                });
+          return (
+            <div
+              key={`${calendar.year}-${calendar.month}-${index}`}
+              className={`min-h-20 rounded-xl border p-1.5 sm:min-h-24 sm:p-2 ${day ? "border-border bg-card" : "border-transparent bg-muted/30"}`}
+            >
+              {day !== null && (
+                <>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {day}
+                  </span>
+                  <ul className="mt-1 space-y-1">
+                    {daySessions.map((session) => (
+                      <li
+                        key={session.id}
+                        className="truncate rounded-md bg-indigo-50 px-1.5 py-1 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                        title={`${session.subject}: ${session.topic}`}
+                      >
+                        {new Date(session.starts_at).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}{" "}
+                        {session.subject}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function makeCalendarMonth(date: Date): CalendarMonth {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  return {
+    year,
+    month,
+    label: new Intl.DateTimeFormat(undefined, {
+      month: "long",
+      year: "numeric",
+    }).format(new Date(year, month, 1)),
+    leadingDays: new Date(year, month, 1).getDay(),
+    totalDays: new Date(year, month + 1, 0).getDate(),
+  };
+}
+
+function localDateTimeMin() {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
