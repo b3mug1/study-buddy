@@ -1,16 +1,17 @@
 import logging
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.auth import CurrentUser
-from app.database import DatabaseError
+from app.database import DatabaseError, database_connection
 from app.profiles import _database_error
 from app.schemas import (
     SessionInvitationDecision,
+    SessionOutcomeUpdate,
     StudySessionCreate,
     StudySessionView,
 )
@@ -84,19 +85,42 @@ def list_sessions(
             user.db.table("study_sessions")
             .select(
                 "id, owner_id, subject, topic, starts_at, duration_minutes, "
-                "study_format, meeting_details, max_participants, status"
+                "study_format, meeting_details, max_participants, status, summary, next_steps"
             )
             .order("starts_at")
             .limit(limit)
         )
         if upcoming_only:
-            query = query.gte("starts_at", datetime.now(UTC).isoformat())
+            query = query.gte("starts_at", (datetime.now(UTC) - timedelta(days=7)).isoformat())
         if not include_cancelled:
             query = query.eq("status", "scheduled")
         return _session_views(user, query.execute().data)
     except DatabaseError as error:
         logger.exception("PostgreSQL failed to list study sessions")
         raise _database_error("load study sessions") from error
+
+
+@router.get("/history", response_model=list[StudySessionView])
+def list_completed_sessions(
+    user: CurrentUser,
+    limit: int = Query(default=30, ge=1, le=100),
+) -> list[StudySessionView]:
+    try:
+        query = (
+            user.db.table("study_sessions")
+            .select(
+                "id, owner_id, subject, topic, starts_at, duration_minutes, "
+                "study_format, meeting_details, max_participants, status, summary, next_steps"
+            )
+            .eq("status", "completed")
+            .lte("starts_at", datetime.now(UTC).isoformat())
+            .order("starts_at", desc=True)
+            .limit(limit)
+        )
+        return _session_views(user, query.execute().data)
+    except DatabaseError as error:
+        logger.exception("PostgreSQL failed to list completed study sessions")
+        raise _database_error("load completed study sessions") from error
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -193,3 +217,98 @@ def cancel_session(session_id: UUID, user: CurrentUser) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Study session not found or you are not its organizer.",
         )
+
+
+@router.post("/{session_id}/complete", status_code=status.HTTP_204_NO_CONTENT)
+def complete_session(session_id: UUID, user: CurrentUser) -> None:
+    user_id = UUID(user.id)
+    try:
+        with database_connection(user.id) as connection:
+            session = connection.execute(
+                "select owner_id,subject,topic,starts_at,status "
+                "from study_sessions where id=%s for update",
+                (session_id,),
+            ).fetchone()
+            if not session or session["owner_id"] != user_id:
+                raise HTTPException(
+                    status_code=404, detail="Study session not found or you are not its organizer."
+                )
+            if session["status"] != "scheduled":
+                raise HTTPException(
+                    status_code=409, detail="This study session is no longer scheduled."
+                )
+            if session["starts_at"] > datetime.now(UTC):
+                raise HTTPException(
+                    status_code=409, detail="A session can be completed after it starts."
+                )
+            connection.execute(
+                "update study_sessions set status='completed',updated_at=now() where id=%s",
+                (session_id,),
+            )
+            participants = connection.execute(
+                """select student_id from session_participants
+                   where session_id=%s and status='accepted' and student_id<>%s""",
+                (session_id, user_id),
+            ).fetchall()
+            for participant in participants:
+                connection.execute(
+                    """insert into notifications(user_id,kind,title,body,entity_type,entity_id)
+                       values (%s,'session_completed','Study session completed',%s,
+                         'study_session',%s)""",
+                    (
+                        participant["student_id"],
+                        f"{session['subject']}: {session['topic']} has been marked complete.",
+                        session_id,
+                    ),
+                )
+    except DatabaseError as error:
+        logger.exception("PostgreSQL failed to complete a study session")
+        raise _database_error("complete the study session") from error
+
+
+@router.put("/{session_id}/outcome")
+def save_session_outcome(
+    session_id: UUID,
+    outcome: SessionOutcomeUpdate,
+    user: CurrentUser,
+) -> dict[str, str]:
+    user_id = UUID(user.id)
+    try:
+        with database_connection(user.id) as connection:
+            participant = connection.execute(
+                """select 1 from session_participants
+                   where session_id=%s and student_id=%s and status='accepted'""",
+                (session_id, user_id),
+            ).fetchone()
+            if not participant:
+                raise HTTPException(
+                    status_code=404, detail="Study session not found or you are not a participant."
+                )
+            row = connection.execute(
+                """update study_sessions set summary=%s,next_steps=%s,updated_at=now()
+                   where id=%s and status<>'cancelled'
+                   returning id,owner_id,subject,topic""",
+                (outcome.summary, outcome.next_steps, session_id),
+            ).fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Study session not found.")
+            participants = connection.execute(
+                """select student_id from session_participants
+                   where session_id=%s and status='accepted' and student_id<>%s""",
+                (session_id, user_id),
+            ).fetchall()
+            for participant_row in participants:
+                connection.execute(
+                    """insert into notifications(user_id,kind,title,body,entity_type,entity_id)
+                       values (%s,'session_outcome','Session notes updated',%s,
+                         'study_session',%s)""",
+                    (
+                        participant_row["student_id"],
+                        f"Notes updated for {row['subject']}: {row['topic']}.",
+                        session_id,
+                    ),
+                )
+        return {"summary": outcome.summary, "next_steps": outcome.next_steps}
+    except DatabaseError as error:
+        logger.exception("PostgreSQL failed to save study session notes")
+        raise _database_error("save the study session notes") from error

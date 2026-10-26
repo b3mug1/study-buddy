@@ -108,6 +108,8 @@ TABLE_COLUMNS: dict[str, set[str]] = {
         "meeting_details",
         "max_participants",
         "status",
+        "summary",
+        "next_steps",
         "created_at",
         "updated_at",
     },
@@ -220,8 +222,12 @@ def _policy(table: str, operation: str, user_id: str) -> tuple[str, list[Any]]:
                     join group_members theirs on theirs.group_id = mine.group_id
                     where mine.student_id = %s and theirs.student_id = profiles.id
                 )
+            ) and not exists (
+                select 1 from blocked_users b
+                where (b.blocker_id = %s and b.blocked_id = profiles.id)
+                   or (b.blocked_id = %s and b.blocker_id = profiles.id)
             )""",
-            [user_id] * 4,
+            [user_id] * 6,
         )
     if table in {"subjects"}:
         return "true", []
@@ -245,7 +251,15 @@ def _policy(table: str, operation: str, user_id: str) -> tuple[str, list[Any]]:
             [user_id, user_id, user_id],
         )
     if table == "connections":
-        return "requester_id = %s or addressee_id = %s", [user_id, user_id]
+        return (
+            "(requester_id = %s or addressee_id = %s) and not exists ("
+            "select 1 from blocked_users b where "
+            "(b.blocker_id=%s and b.blocked_id=case when requester_id=%s "
+            "then addressee_id else requester_id end) "
+            "or (b.blocked_id=%s and b.blocker_id=case when requester_id=%s "
+            "then addressee_id else requester_id end))",
+            [user_id, user_id, user_id, user_id, user_id, user_id],
+        )
     if table == "study_groups":
         return (
             """visibility = 'public' or owner_id = %s
@@ -278,24 +292,36 @@ def _policy(table: str, operation: str, user_id: str) -> tuple[str, list[Any]]:
     if table == "conversations":
         return (
             "exists (select 1 from conversation_members cm "
-            "where cm.conversation_id = conversations.id and cm.student_id = %s)",
-            [user_id],
+            "where cm.conversation_id = conversations.id and cm.student_id = %s) and ("
+            "conversations.kind <> 'direct' or not exists ("
+            "select 1 from conversation_members other "
+            "join blocked_users b on (b.blocker_id=other.student_id and b.blocked_id=%s) "
+            "or (b.blocker_id=%s and b.blocked_id=other.student_id) "
+            "where other.conversation_id=conversations.id and other.student_id<>%s))",
+            [user_id, user_id, user_id, user_id],
         )
     if table == "conversation_members":
         return (
-            "student_id = %s or exists (select 1 from conversation_members mine "
+            "student_id = %s or (exists (select 1 from conversation_members mine "
             "where mine.conversation_id = conversation_members.conversation_id "
-            "and mine.student_id = %s)",
-            [user_id, user_id],
+            "and mine.student_id = %s) and not exists (select 1 from blocked_users b "
+            "where (b.blocker_id=%s and b.blocked_id=conversation_members.student_id) "
+            "or (b.blocker_id=conversation_members.student_id and b.blocked_id=%s)))",
+            [user_id, user_id, user_id, user_id],
         )
     if table == "messages":
         membership = (
             "exists (select 1 from conversation_members cm "
-            "where cm.conversation_id = messages.conversation_id and cm.student_id = %s)"
+            "where cm.conversation_id = messages.conversation_id and cm.student_id = %s) and "
+            "not exists (select 1 from conversations c "
+            "join conversation_members other on other.conversation_id=c.id "
+            "join blocked_users b on (b.blocker_id=other.student_id and b.blocked_id=%s) "
+            "or (b.blocker_id=%s and b.blocked_id=other.student_id) "
+            "where c.id=messages.conversation_id and c.kind='direct' and other.student_id<>%s)"
         )
         if operation == "delete":
-            return f"author_id = %s and {membership}", [user_id, user_id]
-        return membership, [user_id]
+            return f"author_id = %s and {membership}", [user_id, user_id, user_id, user_id, user_id]
+        return membership, [user_id, user_id, user_id, user_id]
     if table == "notifications":
         return "user_id = %s", [user_id]
     if table == "study_sessions":
@@ -320,8 +346,14 @@ def _insert_policy(table: str, user_id: str) -> tuple[str, list[Any]]:
                 select 1 from conversation_members cm
                 where cm.conversation_id = messages.conversation_id
                   and cm.student_id = %s
+            ) and not exists (
+                select 1 from conversations c
+                join conversation_members other on other.conversation_id=c.id
+                join blocked_users b on (b.blocker_id=other.student_id and b.blocked_id=%s)
+                  or (b.blocker_id=%s and b.blocked_id=other.student_id)
+                where c.id=messages.conversation_id and c.kind='direct' and other.student_id<>%s
             )""",
-            [user_id, user_id],
+            [user_id, user_id, user_id, user_id, user_id],
         )
     raise DatabaseError("Direct inserts are not permitted for this table.")
 
@@ -372,6 +404,9 @@ class TableQuery:
 
     def gte(self, column: str, value: Any) -> "TableQuery":
         return self._filter(column, ">=", value)
+
+    def lte(self, column: str, value: Any) -> "TableQuery":
+        return self._filter(column, "<=", value)
 
     def lt(self, column: str, value: Any) -> "TableQuery":
         return self._filter(column, "<", value)
@@ -708,8 +743,13 @@ class RpcQuery:
                 (requester, addressee, requester, addressee),
             ).fetchone()
             visible = connection.execute(
-                "select 1 from profiles where id=%s and is_onboarded and show_in_discovery",
-                (addressee,),
+                """select 1 from profiles p where p.id=%s and p.is_onboarded and p.show_in_discovery
+                   and not exists (
+                     select 1 from blocked_users b
+                     where (b.blocker_id=%s and b.blocked_id=p.id)
+                        or (b.blocked_id=%s and b.blocker_id=p.id)
+                   )""",
+                (addressee, requester, requester),
             ).fetchone()
             if not visible:
                 raise DatabaseError("This student is not available for discovery.", "P0001")
@@ -753,6 +793,13 @@ class RpcQuery:
             ).fetchone()
             if not row:
                 raise DatabaseError("Connection request not found or already answered.", "P0001")
+            blocked = connection.execute(
+                """select 1 from blocked_users where
+                     (blocker_id=%s and blocked_id=%s) or (blocker_id=%s and blocked_id=%s)""",
+                (user_id, row["requester_id"], row["requester_id"], user_id),
+            ).fetchone()
+            if blocked:
+                raise DatabaseError("This connection is no longer available.", "P0001")
             connection.execute(
                 "update connections set status=%s,updated_at=now() where id=%s",
                 ("accepted" if accept else "declined", connection_id),
@@ -1073,8 +1120,17 @@ class RpcQuery:
                    from messages m join conversation_members cm
                      on cm.conversation_id=m.conversation_id
                    where cm.student_id=%s
+                     and not exists (
+                       select 1 from conversations c
+                       join conversation_members other on other.conversation_id=c.id
+                       join blocked_users b on
+                         (b.blocker_id=other.student_id and b.blocked_id=%s)
+                         or (b.blocker_id=%s and b.blocked_id=other.student_id)
+                       where c.id=m.conversation_id and c.kind='direct'
+                         and other.student_id<>%s
+                     )
                    order by m.conversation_id,m.created_at desc,m.id desc""",
-                (user_id,),
+                (user_id, user_id, user_id, user_id),
             ).fetchall()
             return [_row_to_api(row) for row in rows]
 

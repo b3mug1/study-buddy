@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.auth import router as auth_router
+from app.collaboration import router as collaboration_router
 from app.config import get_settings
 from app.database import DatabaseError, close_database, configure_database
 from app.discovery import router as discovery_router
@@ -43,6 +44,7 @@ app.include_router(discovery_router)
 app.include_router(groups_router)
 app.include_router(messaging_router)
 app.include_router(sessions_router)
+app.include_router(collaboration_router)
 app.include_router(realtime_router)
 
 

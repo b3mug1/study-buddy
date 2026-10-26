@@ -1,8 +1,16 @@
-from datetime import UTC, datetime
+import re
+from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+)
 
 SubjectName = Annotated[str, Field(min_length=1, max_length=80)]
 LearningGoal = Annotated[str, Field(min_length=1, max_length=100)]
@@ -11,8 +19,22 @@ TimeOfDay = Literal["morning", "afternoon", "evening"]
 StudyFormat = Literal["online", "offline", "hybrid"]
 GroupVisibility = Literal["public", "private"]
 ConnectionStatus = Literal["pending", "accepted", "declined"]
-SessionStatus = Literal["scheduled", "cancelled"]
+SessionStatus = Literal["scheduled", "cancelled", "completed"]
 InvitationStatus = Literal["invited", "accepted", "declined"]
+
+
+def validate_student_email(value: str) -> str:
+    email = value.lower()
+    if not re.fullmatch(r"[0-9]{6}@astanait\.edu\.kz", email):
+        raise ValueError("Use your six-digit student ID in the format 123456@astanait.edu.kz.")
+    return email
+
+
+StudentEmail = Annotated[
+    EmailStr,
+    Field(max_length=254),
+    AfterValidator(validate_student_email),
+]
 
 
 class ProfileUpsert(BaseModel):
@@ -300,6 +322,8 @@ class StudySessionView(BaseModel):
     meeting_details: str
     max_participants: int
     status: SessionStatus
+    summary: str = ""
+    next_steps: str = ""
     participants: list[SessionParticipantView]
 
 
@@ -307,18 +331,108 @@ class SessionInvitationDecision(BaseModel):
     accept: bool
 
 
+class SessionOutcomeUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    summary: Annotated[str, Field(max_length=1200)] = ""
+    next_steps: Annotated[str, Field(max_length=1200)] = ""
+
+
+class GroupTaskCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    title: Annotated[str, Field(min_length=3, max_length=120)]
+    description: Annotated[str, Field(max_length=1000)] = ""
+    assigned_to: UUID | None = None
+    due_at: datetime | None = None
+
+    @field_validator("due_at")
+    @classmethod
+    def require_timezone_for_due_date(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("Choose a deadline with a timezone.")
+        return value
+
+
+class GroupTaskUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    title: Annotated[str, Field(min_length=3, max_length=120)] | None = None
+    description: Annotated[str, Field(max_length=1000)] | None = None
+    assigned_to: UUID | None = None
+    due_at: datetime | None = None
+    status: Literal["todo", "in_progress", "done"] | None = None
+
+    @field_validator("due_at")
+    @classmethod
+    def require_timezone_for_due_date(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("Choose a deadline with a timezone.")
+        return value
+
+
+class GroupFocusSessionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    focus_minutes: Annotated[int, Field(ge=5, le=120)] = 25
+    break_minutes: Annotated[int, Field(ge=1, le=30)] = 5
+
+
+class StudyGoalCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    subject: Annotated[str, Field(min_length=1, max_length=80)]
+    target_sessions: Annotated[int, Field(ge=1, le=100)]
+    target_date: date | None = None
+
+
+class StudyGoalUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    subject: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    target_sessions: Annotated[int, Field(ge=1, le=100)] | None = None
+    target_date: date | None = None
+
+
+class StudyGoalTopicCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    topic: Annotated[str, Field(min_length=2, max_length=160)]
+
+
+class StudyGoalTopicUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    completed: bool
+
+
+class UserBlockCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    student_id: UUID
+
+
+class SafetyReportCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    entity_type: Literal["profile", "message"]
+    entity_id: UUID
+    reason: Literal["harassment", "spam", "inappropriate", "impersonation", "other"]
+    details: Annotated[str, Field(max_length=1000)] = ""
+
+
 class RegisterRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     full_name: Annotated[str, Field(min_length=2, max_length=80)]
-    email: Annotated[EmailStr, Field(max_length=254)]
+    email: StudentEmail
     password: Annotated[str, Field(min_length=8, max_length=128)]
 
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    email: Annotated[EmailStr, Field(max_length=254)]
+    email: StudentEmail
     password: Annotated[str, Field(min_length=8, max_length=128)]
 
 
@@ -333,13 +447,7 @@ class VerifyEmailRequest(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    email: Annotated[EmailStr, Field(max_length=254)]
-
-
-class ResendVerificationRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
-    email: Annotated[EmailStr, Field(max_length=254)]
+    email: StudentEmail
 
 
 class ResetPasswordRequest(BaseModel):

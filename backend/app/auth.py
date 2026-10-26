@@ -13,7 +13,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import get_settings
 from app.database import DatabaseError, PostgresDatabase, database_connection
-from app.email import send_password_reset_email, send_verification_email
 from app.schemas import (
     AuthTokens,
     AuthUserView,
@@ -21,7 +20,6 @@ from app.schemas import (
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
-    ResendVerificationRequest,
     ResetPasswordRequest,
     VerifyEmailRequest,
 )
@@ -230,7 +228,6 @@ def register(request: RegisterRequest) -> AuthTokens:
     _settings_with_secret()
     _enforce_auth_rate_limit("register", request.email, 20, timedelta(hours=1))
     user_id = uuid4()
-
     try:
         with database_connection() as connection:
             connection.execute(
@@ -253,7 +250,7 @@ def register(request: RegisterRequest) -> AuthTokens:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="An account with this email already exists. Please log in.",
-            )
+            ) from error
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to create your account right now.",
@@ -286,11 +283,12 @@ def login(request: LoginRequest) -> AuthTokens:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email or password is incorrect.",
         ) from None
-    with database_connection() as connection:
-        connection.execute(
-            "update users set email_verified=true where id=%s and email_verified=false",
-            (user["id"],),
-        )
+    if not user["email_verified"]:
+        with database_connection() as connection:
+            connection.execute(
+                "update users set email_verified=true where id=%s",
+                (user["id"],),
+            )
     return _create_tokens(user["id"], user["email"])
 
 
@@ -317,34 +315,6 @@ def verify_email(request: VerifyEmailRequest) -> AuthTokens:
             "select id,email from users where id=%s", (row["user_id"],)
         ).fetchone()
     return _create_tokens(user["id"], user["email"])
-
-
-@router.post("/resend-verification", status_code=status.HTTP_202_ACCEPTED)
-def resend_verification(request: ResendVerificationRequest) -> dict[str, str]:
-    _settings_with_secret()
-    _enforce_auth_rate_limit("resend-verification", request.email, 5, timedelta(hours=1))
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(UTC) + timedelta(hours=get_settings().verification_token_hours)
-    with database_connection() as connection:
-        user = connection.execute(
-            """select id from users where email=lower(%s)
-               and email_verified=false and disabled_at is null""",
-            (request.email,),
-        ).fetchone()
-        if user:
-            connection.execute(
-                """update email_verification_tokens set used_at=now()
-                   where user_id=%s and used_at is null""",
-                (user["id"],),
-            )
-            connection.execute(
-                """insert into email_verification_tokens(user_id,token_hash,expires_at)
-                   values (%s,%s,%s)""",
-                (user["id"], _token_hash(token), expires_at),
-            )
-    if user:
-        send_verification_email(request.email, token)
-    return {"message": "If the account needs verification, a new email has been sent."}
 
 
 @router.post("/refresh", response_model=AuthTokens)
@@ -405,32 +375,12 @@ def logout(request: RefreshRequest) -> None:
             )
 
 
-@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
-def forgot_password(request: ForgotPasswordRequest) -> dict[str, str]:
-    _settings_with_secret()
-    _enforce_auth_rate_limit("forgot-password", request.email, 5, timedelta(hours=1))
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(UTC) + timedelta(minutes=get_settings().password_reset_token_minutes)
-    with database_connection() as connection:
-        user = connection.execute(
-            """select id from users where email=lower(%s)
-               and email_verified=true and disabled_at is null""",
-            (request.email,),
-        ).fetchone()
-        if user:
-            connection.execute(
-                """update password_reset_tokens set used_at=now()
-                   where user_id=%s and used_at is null""",
-                (user["id"],),
-            )
-            connection.execute(
-                """insert into password_reset_tokens(user_id,token_hash,expires_at)
-                   values (%s,%s,%s)""",
-                (user["id"], _token_hash(token), expires_at),
-            )
-    if user:
-        send_password_reset_email(request.email, token)
-    return {"message": "If an account exists for that email, a reset link has been sent."}
+@router.post("/forgot-password", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+def forgot_password(request: ForgotPasswordRequest) -> None:
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Password reset is unavailable because email delivery is disabled.",
+    )
 
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)

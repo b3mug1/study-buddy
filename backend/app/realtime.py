@@ -41,8 +41,16 @@ def create_websocket_ticket(conversation_id: UUID, user: CurrentUser) -> dict[st
             )
         connection.execute("delete from websocket_tickets where expires_at<now()-interval '1 day'")
         membership = connection.execute(
-            """select 1 from conversation_members
-               where conversation_id=%s and student_id=%s""",
+            """select 1 from conversation_members mine
+               join conversations c on c.id=mine.conversation_id
+               where mine.conversation_id=%s and mine.student_id=%s
+                 and (c.kind<>'direct' or not exists (
+                   select 1 from conversation_members other
+                   join blocked_users b on
+                     (b.blocker_id=other.student_id and b.blocked_id=mine.student_id)
+                     or (b.blocker_id=mine.student_id and b.blocked_id=other.student_id)
+                   where other.conversation_id=c.id and other.student_id<>mine.student_id
+                 ))""",
             (conversation_id, UUID(user.id)),
         ).fetchone()
         if not membership:
@@ -124,8 +132,16 @@ async def conversation_socket(
                         continue
                     membership = await (
                         await connection.execute(
-                            """select 1 from conversation_members
-                               where conversation_id=%s and student_id=%s""",
+                            """select 1 from conversation_members mine
+                       join conversations c on c.id=mine.conversation_id
+                       where mine.conversation_id=%s and mine.student_id=%s
+                         and (c.kind<>'direct' or not exists (
+                           select 1 from conversation_members other
+                           join blocked_users b on
+                             (b.blocker_id=other.student_id and b.blocked_id=mine.student_id)
+                             or (b.blocker_id=mine.student_id and b.blocked_id=other.student_id)
+                           where other.conversation_id=c.id and other.student_id<>mine.student_id
+                         ))""",
                             (conversation_id, user_id),
                         )
                     ).fetchone()
