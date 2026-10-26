@@ -1,0 +1,31 @@
+# Dependencies — npm install runs inside the container
+node_modules
+.npm
+
+# Next.js build cache (builder stage does a fresh build)
+.next
+
+# Python virtualenv
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# Test / lint artifacts
+.ruff_cache
+.pytest_cache
+test-results
+e2e
+
+# Git & IDE
+.git
+.gitignore
+
+# Secrets — never copy into image
+.env.local
+.env*.local
+
+# Misc
+*.log
+README.md
