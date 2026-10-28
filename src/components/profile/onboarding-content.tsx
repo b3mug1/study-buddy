@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "@/components/navigation/link";
-import { BookOpenCheck } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n";
 
@@ -11,11 +10,10 @@ export function OnboardingContent({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8">
-        <Link href="/" className="flex items-center gap-3 text-xl font-bold">
-          <span className="grid size-9 place-items-center rounded-[var(--radius-sharp)] border border-border bg-card text-primary">
-            <BookOpenCheck size={19} aria-hidden="true" />
+        <Link href="/" className="brand-link brand-link--logo">
+          <span className="brand-logo-crop" aria-hidden="true">
+            <img src="/study-buddy-logo.png" alt="" />
           </span>
-          Study Buddy
         </Link>
         <LanguageSwitcher compact />
       </header>

@@ -41,11 +41,10 @@ export function LandingPage() {
   return (
     <main className="landing-page min-h-screen bg-background text-foreground">
       <header className="landing-header mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
-        <Link href="/" className="brand-link" aria-label="Study Buddy">
-          <span className="brand-link__icon" aria-hidden="true">
-            <BookOpenCheck size={20} strokeWidth={2} />
+        <Link href="/" className="brand-link brand-link--logo" aria-label="Study Buddy">
+          <span className="brand-logo-crop" aria-hidden="true">
+            <img src="/study-buddy-logo.png" alt="" />
           </span>
-          <span className="brand-name">Study Buddy</span>
         </Link>
         <nav
           className="flex items-center gap-2 sm:gap-4"

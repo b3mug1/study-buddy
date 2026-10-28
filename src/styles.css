@@ -463,6 +463,38 @@ button:disabled,
   gap: 0.7rem;
 }
 
+.brand-link--logo {
+  height: 4.5rem;
+}
+
+.brand-link--compact {
+  height: 3.5rem;
+}
+
+.brand-logo-crop {
+  display: block;
+  width: 9.5rem;
+  height: 4.5rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.brand-logo-crop img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: translateY(-2.2rem);
+}
+
+.brand-link--compact .brand-logo-crop {
+  width: 7.5rem;
+  height: 3.5rem;
+}
+
+.brand-link--compact .brand-logo-crop img {
+  transform: translateY(-1.75rem);
+}
+
 .brand-link__icon {
   display: grid;
   width: 2.35rem;

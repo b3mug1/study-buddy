@@ -22,11 +22,10 @@ export function AuthShell({
   return (
     <main className="auth-page min-h-screen bg-background text-foreground">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between border-b border-border px-5 py-4 sm:px-8">
-        <Link href="/" className="brand-link">
-          <span className="brand-link__icon">
-            <BookOpenCheck size={20} aria-hidden="true" />
+        <Link href="/" className="brand-link brand-link--logo" aria-label="Study Buddy">
+          <span className="brand-logo-crop" aria-hidden="true">
+            <img src="/study-buddy-logo.png" alt="" />
           </span>
-          <span className="brand-name">Study Buddy</span>
         </Link>
         <div className="flex items-center gap-3">
           <LanguageSwitcher compact />

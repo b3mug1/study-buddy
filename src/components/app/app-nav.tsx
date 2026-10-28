@@ -134,13 +134,13 @@ export function AppNav({
       >
         <Link
           href="/dashboard"
-          className="flex shrink-0 items-center gap-2.5"
+          className="brand-link brand-link--logo brand-link--compact shrink-0"
+          aria-label="Study Buddy"
           onClick={() => setOpenMenu(null)}
         >
-          <span className="brand-emblem" aria-hidden="true">
-            SB
+          <span className="brand-logo-crop" aria-hidden="true">
+            <img src="/study-buddy-logo.png" alt="" />
           </span>
-          <span className="brand-name hidden sm:block">Study Buddy</span>
         </Link>
 
         <div className="mx-2 hidden h-6 w-px shrink-0 bg-border xl:block" />
