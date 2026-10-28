@@ -14,6 +14,7 @@ from app.schemas import (
     MessageCreate,
     MessageView,
     NotificationView,
+    StartConversationRequest,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["messages and notifications"])
@@ -30,7 +31,17 @@ def _api_permission_error(error: DatabaseError, operation: str) -> HTTPException
     if getattr(error, "code", None) == "42501":
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this conversation.",
+            detail=getattr(error, "message", "You do not have access to this conversation."),
+        )
+    if getattr(error, "code", None) == "MESSAGE_LIMIT":
+        return HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=error.message,
+        )
+    if getattr(error, "code", None) == "P0001":
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=error.message,
         )
     if "rate limit exceeded" in getattr(error, "message", "").lower():
         return HTTPException(
@@ -70,6 +81,24 @@ def list_conversations(user: CurrentUser) -> list[ConversationView]:
         for batch in _chunks(member_ids):
             rows = user.db.table("profiles").select("id, full_name").in_("id", batch).execute().data
             profiles.update({row["id"]: row for row in rows})
+
+        connection_ids = list(
+            {
+                item["connection_id"]
+                for item in conversations
+                if item["kind"] == "direct" and item["connection_id"]
+            }
+        )
+        connections: dict[str, dict[str, Any]] = {}
+        for batch in _chunks(connection_ids):
+            rows = (
+                user.db.table("connections")
+                .select("id, requester_id, addressee_id, status, intro_messages_sent")
+                .in_("id", batch)
+                .execute()
+                .data
+            )
+            connections.update({row["id"]: row for row in rows})
 
         group_ids = list(
             {
@@ -117,11 +146,27 @@ def list_conversations(user: CurrentUser) -> list[ConversationView]:
         group_id = conversation["group_id"]
         names = members_by_conversation.get(conversation["id"], [])
         latest = latest_messages.get(conversation["id"])
+        contact = connections.get(conversation["connection_id"])
+        communication_status = contact["status"] if contact else None
+        request_direction = None
+        intro_messages_remaining = None
+        if communication_status == "pending" and contact:
+            request_direction = (
+                "outgoing" if contact["requester_id"] == user.id else "incoming"
+            )
+            if request_direction == "outgoing":
+                intro_messages_remaining = max(
+                    0, 3 - int(contact["intro_messages_sent"])
+                )
         results.append(
             ConversationView(
                 id=conversation["id"],
                 kind=conversation["kind"],
                 group_id=group_id,
+                connection_id=conversation["connection_id"],
+                communication_status=communication_status,
+                request_direction=request_direction,
+                intro_messages_remaining=intro_messages_remaining,
                 title=groups.get(group_id, "Study group")
                 if conversation["kind"] == "group"
                 else (names[0] if names else "Study partner"),
@@ -211,29 +256,39 @@ def send_message(
     user: CurrentUser,
 ) -> MessageView:
     try:
-        result = (
-            user.db.table("messages")
-            .insert(
-                {
-                    "conversation_id": str(conversation_id),
-                    "author_id": user.id,
-                    "body": message.body,
-                }
-            )
-            .select("id, conversation_id, author_id, body, created_at")
-            .single()
-            .execute()
-        )
-        profile = (
-            user.db.table("profiles").select("full_name").eq("id", user.id).single().execute().data
-        )
+        result = user.db.rpc(
+            "send_conversation_message",
+            {
+                "p_conversation_id": str(conversation_id),
+                "p_body": message.body,
+            },
+        ).execute().data
     except DatabaseError as error:
         raise _api_permission_error(error, "send the message") from error
 
-    return MessageView(
-        **result.data,
-        author_name=profile["full_name"],
-    )
+    return MessageView(**result)
+
+
+@router.post(
+    "/conversations/start",
+    response_model=MessageView,
+    status_code=status.HTTP_201_CREATED,
+)
+def start_conversation(
+    request: StartConversationRequest,
+    user: CurrentUser,
+) -> MessageView:
+    try:
+        result = user.db.rpc(
+            "start_conversation",
+            {
+                "p_student_id": str(request.student_id),
+                "p_body": request.body,
+            },
+        ).execute().data
+    except DatabaseError as error:
+        raise _api_permission_error(error, "start a conversation") from error
+    return MessageView(**result)
 
 
 @router.delete(

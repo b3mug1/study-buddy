@@ -53,6 +53,7 @@ TABLE_COLUMNS: dict[str, set[str]] = {
         "requester_id",
         "addressee_id",
         "status",
+        "intro_messages_sent",
         "created_at",
         "updated_at",
     },
@@ -341,20 +342,7 @@ def _policy(table: str, operation: str, user_id: str) -> tuple[str, list[Any]]:
 
 def _insert_policy(table: str, user_id: str) -> tuple[str, list[Any]]:
     if table == "messages":
-        return (
-            """author_id = %s and exists (
-                select 1 from conversation_members cm
-                where cm.conversation_id = messages.conversation_id
-                  and cm.student_id = %s
-            ) and not exists (
-                select 1 from conversations c
-                join conversation_members other on other.conversation_id=c.id
-                join blocked_users b on (b.blocker_id=other.student_id and b.blocked_id=%s)
-                  or (b.blocker_id=%s and b.blocked_id=other.student_id)
-                where c.id=messages.conversation_id and c.kind='direct' and other.student_id<>%s
-            )""",
-            [user_id, user_id, user_id, user_id, user_id],
-        )
+        raise DatabaseError("Messages must use the guarded conversation send operation.")
     raise DatabaseError("Direct inserts are not permitted for this table.")
 
 
@@ -634,6 +622,8 @@ class RpcQuery:
             "complete_onboarding": self._complete_onboarding,
             "create_connection_request": self._create_connection_request,
             "respond_to_connection": self._respond_to_connection,
+            "start_conversation": self._start_conversation,
+            "send_conversation_message": self._send_conversation_message,
             "create_study_group": self._create_study_group,
             "request_group_join": self._request_group_join,
             "respond_to_group_join_request": self._respond_to_group_join_request,
@@ -736,7 +726,12 @@ class RpcQuery:
                 (":".join(sorted((str(requester), str(addressee)))),),
             )
             candidate = connection.execute(
-                """select id,status from connections
+                """select id,status,requester_id,addressee_id,
+                          exists(
+                            select 1 from conversations c
+                            where c.connection_id=connections.id
+                          ) as has_conversation
+                   from connections
                    where least(requester_id,addressee_id)=least(%s,%s)
                      and greatest(requester_id,addressee_id)=greatest(%s,%s)
                    for update""",
@@ -757,10 +752,20 @@ class RpcQuery:
                 raise DatabaseError("You are already connected.", "P0001")
             if candidate and candidate["status"] == "pending":
                 raise DatabaseError("A connection request is already pending.", "P0001")
+            if (
+                candidate
+                and candidate["status"] == "declined"
+                and candidate["has_conversation"]
+                and candidate["requester_id"] == requester
+            ):
+                raise DatabaseError(
+                    "This student declined the conversation request.", "P0001"
+                )
             if candidate:
                 connection.execute(
                     """update connections set requester_id=%s,addressee_id=%s,
-                       status='pending',created_at=now(),updated_at=now() where id=%s""",
+                       status='pending',intro_messages_sent=0,
+                       created_at=now(),updated_at=now() where id=%s""",
                     (requester, addressee, candidate["id"]),
                 )
                 connection_id = candidate["id"]
@@ -800,16 +805,23 @@ class RpcQuery:
             ).fetchone()
             if blocked:
                 raise DatabaseError("This connection is no longer available.", "P0001")
+            conversation = connection.execute(
+                "select id from conversations where connection_id=%s for update",
+                (connection_id,),
+            ).fetchone()
             connection.execute(
                 "update connections set status=%s,updated_at=now() where id=%s",
                 ("accepted" if accept else "declined", connection_id),
             )
             if accept:
-                conversation_id = connection.execute(
-                    """insert into conversations(kind,connection_id,created_by)
-                       values ('direct',%s,%s) returning id""",
-                    (connection_id, row["requester_id"]),
-                ).fetchone()["id"]
+                if conversation:
+                    conversation_id = conversation["id"]
+                else:
+                    conversation_id = connection.execute(
+                        """insert into conversations(kind,connection_id,created_by)
+                           values ('direct',%s,%s) returning id""",
+                        (connection_id, row["requester_id"]),
+                    ).fetchone()["id"]
                 for student_id in (row["requester_id"], row["addressee_id"]):
                     connection.execute(
                         """insert into conversation_members(conversation_id,student_id)
@@ -825,6 +837,243 @@ class RpcQuery:
                     "connection",
                     connection_id,
                 )
+            if conversation:
+                connection.execute(
+                    "select pg_notify('study_buddy_messages', %s)",
+                    (str(conversation["id"]),),
+                )
+
+    def _start_conversation(self) -> dict[str, Any]:
+        requester = UUID(self.database.user_id)
+        addressee = UUID(self.params["p_student_id"])
+        body = str(self.params["p_body"]).strip()
+        if requester == addressee:
+            raise DatabaseError("You cannot send a message to yourself.", "P0001")
+
+        with self._transaction() as connection:
+            pair_key = ":".join(sorted((str(requester), str(addressee))))
+            connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended(%s,0))",
+                (pair_key,),
+            )
+            contact = connection.execute(
+                """select id,requester_id,addressee_id,status,intro_messages_sent
+                   from connections
+                   where least(requester_id,addressee_id)=least(%s,%s)
+                     and greatest(requester_id,addressee_id)=greatest(%s,%s)
+                   for update""",
+                (requester, addressee, requester, addressee),
+            ).fetchone()
+            visible = connection.execute(
+                """select 1 from profiles p
+                   where p.id=%s
+                     and (
+                       (p.is_onboarded and p.show_in_discovery)
+                       or exists (
+                         select 1 from connections c
+                         where c.status='accepted'
+                           and least(c.requester_id,c.addressee_id)=least(p.id,%s)
+                           and greatest(c.requester_id,c.addressee_id)=greatest(p.id,%s)
+                       )
+                     )
+                     and not exists (
+                       select 1 from blocked_users b
+                       where (b.blocker_id=%s and b.blocked_id=p.id)
+                          or (b.blocked_id=%s and b.blocker_id=p.id)
+                     )""",
+                (addressee, requester, requester, requester, requester),
+            ).fetchone()
+            if not visible:
+                raise DatabaseError(
+                    "This student is not available for messaging.", "42501"
+                )
+
+            if contact is None:
+                contact = connection.execute(
+                    """insert into connections(requester_id,addressee_id,status)
+                       values (%s,%s,'pending')
+                       returning id,requester_id,addressee_id,status,intro_messages_sent""",
+                    (requester, addressee),
+                ).fetchone()
+            elif contact["status"] == "pending":
+                if contact["requester_id"] != requester:
+                    raise DatabaseError(
+                        "This student has already sent you a connection request. "
+                        "Respond to it before messaging.",
+                        "P0001",
+                    )
+            elif contact["status"] == "declined":
+                if contact["requester_id"] == requester:
+                    raise DatabaseError(
+                        "This student declined your previous request.", "P0001"
+                    )
+                contact = connection.execute(
+                    """update connections
+                       set requester_id=%s,addressee_id=%s,status='pending',
+                           intro_messages_sent=0,created_at=now(),updated_at=now()
+                       where id=%s
+                       returning id,requester_id,addressee_id,status,intro_messages_sent""",
+                    (requester, addressee, contact["id"]),
+                ).fetchone()
+
+            conversation = connection.execute(
+                "select id from conversations where connection_id=%s for update",
+                (contact["id"],),
+            ).fetchone()
+            if conversation:
+                conversation_id = conversation["id"]
+            else:
+                conversation_id = connection.execute(
+                    """insert into conversations(kind,connection_id,created_by)
+                       values ('direct',%s,%s) returning id""",
+                    (contact["id"], requester),
+                ).fetchone()["id"]
+            for student_id in (requester, addressee):
+                connection.execute(
+                    """insert into conversation_members(conversation_id,student_id)
+                       values (%s,%s) on conflict do nothing""",
+                    (conversation_id, student_id),
+                )
+
+            communication_status = contact["status"]
+            remaining: int | None = None
+            if communication_status == "pending":
+                sent_count = int(contact["intro_messages_sent"])
+                if sent_count >= 3:
+                    raise DatabaseError(
+                        "You have used your three introductory messages. "
+                        "Wait for the student to accept the chat request.",
+                        "MESSAGE_LIMIT",
+                    )
+                sent_count += 1
+                connection.execute(
+                    "update connections set intro_messages_sent=%s where id=%s",
+                    (sent_count, contact["id"]),
+                )
+                remaining = 3 - sent_count
+
+            message = connection.execute(
+                """insert into messages(conversation_id,author_id,body)
+                   values (%s,%s,%s)
+                   returning id,conversation_id,author_id,body,created_at""",
+                (conversation_id, requester, body),
+            ).fetchone()
+            author = connection.execute(
+                "select full_name from profiles where id=%s", (requester,)
+            ).fetchone()
+            return {
+                **_row_to_api(message),
+                "author_name": author["full_name"] if author else "Study Buddy member",
+                "communication_status": communication_status,
+                "intro_messages_remaining": remaining,
+            }
+
+    def _send_conversation_message(self) -> dict[str, Any]:
+        user_id = UUID(self.database.user_id)
+        conversation_id = UUID(self.params["p_conversation_id"])
+        body = str(self.params["p_body"]).strip()
+        with self._transaction() as connection:
+            conversation = connection.execute(
+                "select id,kind,connection_id from conversations where id=%s",
+                (conversation_id,),
+            ).fetchone()
+            if not conversation:
+                raise DatabaseError(
+                    "Conversation not found or you are not a member.", "42501"
+                )
+
+            communication_status: str | None = None
+            remaining: int | None = None
+            if conversation["connection_id"]:
+                contact = connection.execute(
+                    """select id,requester_id,addressee_id,status,intro_messages_sent
+                       from connections where id=%s for update""",
+                    (conversation["connection_id"],),
+                ).fetchone()
+                connection.execute(
+                    "select id from conversations where id=%s for update",
+                    (conversation_id,),
+                )
+                if not contact:
+                    raise DatabaseError("This conversation is unavailable.", "42501")
+                membership = connection.execute(
+                    """select 1 from conversation_members
+                       where conversation_id=%s and student_id=%s""",
+                    (conversation_id, user_id),
+                ).fetchone()
+                if not membership:
+                    raise DatabaseError(
+                        "Conversation not found or you are not a member.", "42501"
+                    )
+                other_user_id = (
+                    contact["addressee_id"]
+                    if contact["requester_id"] == user_id
+                    else contact["requester_id"]
+                )
+                blocked = connection.execute(
+                    """select 1 from blocked_users
+                       where (blocker_id=%s and blocked_id=%s)
+                          or (blocker_id=%s and blocked_id=%s)""",
+                    (user_id, other_user_id, other_user_id, user_id),
+                ).fetchone()
+                if blocked:
+                    raise DatabaseError(
+                        "You do not have access to this conversation.", "42501"
+                    )
+                communication_status = contact["status"]
+                if communication_status == "declined":
+                    raise DatabaseError(
+                        "This chat request was declined.", "42501"
+                    )
+                if communication_status == "pending":
+                    if contact["requester_id"] != user_id:
+                        raise DatabaseError(
+                            "Accept the chat request before replying.", "42501"
+                        )
+                    sent_count = int(contact["intro_messages_sent"])
+                    if sent_count >= 3:
+                        raise DatabaseError(
+                            "You have used your three introductory messages. "
+                            "Wait for the student to accept the chat request.",
+                            "MESSAGE_LIMIT",
+                        )
+                    sent_count += 1
+                    connection.execute(
+                        "update connections set intro_messages_sent=%s where id=%s",
+                        (sent_count, contact["id"]),
+                    )
+                    remaining = 3 - sent_count
+            else:
+                connection.execute(
+                    "select id from conversations where id=%s for update",
+                    (conversation_id,),
+                )
+                membership = connection.execute(
+                    """select 1 from conversation_members
+                       where conversation_id=%s and student_id=%s""",
+                    (conversation_id, user_id),
+                ).fetchone()
+                if not membership:
+                    raise DatabaseError(
+                        "Conversation not found or you are not a member.", "42501"
+                    )
+
+            message = connection.execute(
+                """insert into messages(conversation_id,author_id,body)
+                   values (%s,%s,%s)
+                   returning id,conversation_id,author_id,body,created_at""",
+                (conversation_id, user_id, body),
+            ).fetchone()
+            author = connection.execute(
+                "select full_name from profiles where id=%s", (user_id,)
+            ).fetchone()
+
+            return {
+                **_row_to_api(message),
+                "author_name": author["full_name"] if author else "Study Buddy member",
+                "communication_status": communication_status,
+                "intro_messages_remaining": remaining,
+            }
 
     def _create_study_group(self) -> str:
         p = self.params

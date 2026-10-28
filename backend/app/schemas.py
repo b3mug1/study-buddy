@@ -243,6 +243,13 @@ class MessageCreate(BaseModel):
     body: Annotated[str, Field(min_length=1, max_length=4000)]
 
 
+class StartConversationRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    student_id: UUID
+    body: Annotated[str, Field(min_length=1, max_length=4000)]
+
+
 class MessageView(BaseModel):
     id: str
     conversation_id: str
@@ -250,12 +257,18 @@ class MessageView(BaseModel):
     author_name: str
     body: str
     created_at: datetime
+    communication_status: ConnectionStatus | None = None
+    intro_messages_remaining: Annotated[int, Field(ge=0, le=3)] | None = None
 
 
 class ConversationView(BaseModel):
     id: str
     kind: Literal["direct", "group"]
     group_id: str | None = None
+    connection_id: str | None = None
+    communication_status: ConnectionStatus | None = None
+    request_direction: Literal["incoming", "outgoing"] | None = None
+    intro_messages_remaining: Annotated[int, Field(ge=0, le=3)] | None = None
     title: str
     other_members: list[str]
     last_message: str | None = None
