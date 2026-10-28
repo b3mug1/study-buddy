@@ -516,6 +516,125 @@ button:disabled,
   line-height: 1.2;
 }
 
+/* --- Language switcher ---------------------------------------------------- */
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lang-switcher__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.lang-switcher__trigger:hover {
+  border-color: var(--input);
+  background: var(--muted);
+}
+
+.lang-switcher__trigger--open {
+  border-color: var(--ring);
+  background: var(--muted);
+}
+
+.lang-switcher__trigger:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.lang-switcher__short {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.lang-switcher__label {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .lang-switcher__label {
+    display: inline;
+  }
+}
+
+.lang-switcher__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 40;
+  min-width: 13.5rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--popover);
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.24);
+}
+
+.lang-switcher__option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sharp);
+  color: var(--foreground);
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.lang-switcher__option:hover {
+  background: var(--muted);
+}
+
+.lang-switcher__option:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.lang-switcher__option--active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.lang-switcher__option--active:hover {
+  background: var(--accent);
+}
+
+.lang-switcher__badge {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.lang-switcher__option--active .lang-switcher__badge {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 /* ==========================================================================
    5. LANDING
    ========================================================================== */
