@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
@@ -8,11 +9,12 @@ import {
   LoaderCircle,
   Sparkles,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { saveStudentProfile } from "@/lib/api-client";
+import type { StudentProfile } from "@/lib/api-types";
 import { Button } from "@/components/ui/button";
 import {
   parseListInput,
@@ -51,16 +53,18 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium">{t(label)}</label>
       {children}
       {hint && (
-        <p className="text-xs leading-5 text-muted-foreground">{hint}</p>
+        <p className="text-xs leading-5 text-muted-foreground">{t(hint)}</p>
       )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {t(error)}
         </p>
       )}
     </div>
@@ -70,11 +74,14 @@ function Field({
 export function ProfileWizard({
   initialValues,
   mode = "onboarding",
+  onSaved,
 }: {
   initialValues?: Partial<ProfileFormValues>;
   mode?: "onboarding" | "edit";
+  onSaved?: (profile: StudentProfile) => void;
 }) {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [actionError, setActionError] = useState("");
   const form = useForm<ProfileFormValues, unknown, ValidProfile>({
@@ -111,7 +118,10 @@ export function ProfileWizard({
   const submit = form.handleSubmit(async (values) => {
     setActionError("");
     try {
-      await saveStudentProfile(values);
+      const savedProfile = await saveStudentProfile(values);
+      if (mode === "edit") {
+        onSaved?.(savedProfile);
+      }
     } catch (error) {
       setActionError(
         error instanceof Error
@@ -121,11 +131,11 @@ export function ProfileWizard({
       return;
     }
     if (mode === "onboarding") {
-      toast.success("Your study profile is ready.");
-      router.replace("/dashboard");
+      toast.success(t("Your study profile is ready."));
+      navigate("/dashboard", { replace: true });
     } else {
-      toast.success("Your profile was updated.");
-      router.refresh();
+      toast.success(t("Your profile was updated."));
+      navigate("/my-profile", { replace: true });
     }
   });
 
@@ -133,27 +143,33 @@ export function ProfileWizard({
     <form onSubmit={submit} noValidate className="space-y-7">
       <div
         className="flex items-center gap-2"
-        aria-label={`Step ${step + 1} of ${steps.length}`}
+        aria-label={t("Step {number} of {total}", {
+          number: step + 1,
+          total: steps.length,
+        })}
       >
         {steps.map((item, index) => (
           <span
             key={item.title}
             className={`h-1.5 flex-1 rounded-full transition-colors ${
-              index <= step ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-700"
+              index <= step ? "bg-primary" : "bg-secondary"
             }`}
           />
         ))}
       </div>
 
       <div>
-        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-          Step {step + 1} of {steps.length}
+        <p className="text-sm font-semibold text-primary">
+          {t("Step {number} of {total}", {
+            number: step + 1,
+            total: steps.length,
+          })}
         </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-          {steps[step].title}
+          {t(steps[step].title)}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {steps[step].detail}
+          {t(steps[step].detail)}
         </p>
       </div>
 
@@ -166,7 +182,7 @@ export function ProfileWizard({
             <input
               autoComplete="name"
               className={inputClass}
-              placeholder="Your name"
+              placeholder={t("Your name")}
               {...form.register("fullName")}
             />
           </Field>
@@ -177,7 +193,7 @@ export function ProfileWizard({
             <input
               autoComplete="organization"
               className={inputClass}
-              placeholder="University name"
+              placeholder={t("University name")}
               {...form.register("universityName")}
             />
           </Field>
@@ -188,7 +204,7 @@ export function ProfileWizard({
             >
               <input
                 className={inputClass}
-                placeholder="e.g. Biology"
+                placeholder={t("e.g. Biology")}
                 {...form.register("major")}
               />
             </Field>
@@ -200,15 +216,7 @@ export function ProfileWizard({
                 {Array.from({ length: 8 }, (_, index) => index + 1).map(
                   (year) => (
                     <option key={year} value={year}>
-                      {year}
-                      {year === 1
-                        ? "st"
-                        : year === 2
-                          ? "nd"
-                          : year === 3
-                            ? "rd"
-                            : "th"}{" "}
-                      year
+                      {t("Year {year}", { year })}
                     </option>
                   ),
                 )}
@@ -224,7 +232,7 @@ export function ProfileWizard({
               rows={3}
               maxLength={300}
               className={`${inputClass} resize-y`}
-              placeholder="A few words about how you like to learn…"
+              placeholder={t("A few words about how you like to learn…")}
               {...form.register("bio")}
             />
           </Field>
@@ -240,7 +248,7 @@ export function ProfileWizard({
           >
             <input
               className={inputClass}
-              placeholder="e.g. Biology, Statistics, Psychology"
+              placeholder={t("e.g. Biology, Statistics, Psychology")}
               {...form.register("subjects")}
             />
           </Field>
@@ -251,18 +259,19 @@ export function ProfileWizard({
           >
             <input
               className={inputClass}
-              placeholder="e.g. Prepare for exams, stay motivated"
+              placeholder={t("e.g. Prepare for exams, stay motivated")}
               {...form.register("learningGoals")}
             />
           </Field>
-          <div className="flex gap-3 rounded-2xl bg-indigo-50 p-4 text-sm leading-6 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-100">
+          <div className="flex gap-3 rounded-lg bg-accent p-4 text-sm leading-6 text-accent-foreground">
             <Sparkles
               size={18}
               className="mt-0.5 shrink-0"
               aria-hidden="true"
             />
-            These interests help us make future study partner recommendations
-            more relevant.
+            {t(
+              "These interests help us make future study partner recommendations more relevant.",
+            )}
           </div>
         </div>
       )}
@@ -282,8 +291,8 @@ export function ProfileWizard({
                     className="peer sr-only"
                     {...form.register("availabilityDays")}
                   />
-                  <span className="grid min-h-11 place-items-center rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground transition peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500 dark:peer-checked:bg-indigo-950 dark:peer-checked:text-indigo-200">
-                    {label}
+                  <span className="grid min-h-11 place-items-center rounded-md border border-border bg-card text-sm font-medium text-muted-foreground transition peer-checked:border-primary peer-checked:bg-accent peer-checked:text-accent-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                    {t(label)}
                   </span>
                 </label>
               ))}
@@ -291,16 +300,16 @@ export function ProfileWizard({
           </Field>
           <Field label="Preferred time of day">
             <select className={inputClass} {...form.register("preferredHours")}>
-              <option value="morning">Morning · 8 am–12 pm</option>
-              <option value="afternoon">Afternoon · 12–5 pm</option>
-              <option value="evening">Evening · 5–10 pm</option>
+              <option value="morning">{t("Morning · 8 am–12 pm")}</option>
+              <option value="afternoon">{t("Afternoon · 12–5 pm")}</option>
+              <option value="evening">{t("Evening · 5–10 pm")}</option>
             </select>
           </Field>
           <Field label="Study format">
             <select className={inputClass} {...form.register("studyFormat")}>
-              <option value="online">Online</option>
-              <option value="offline">In person</option>
-              <option value="hybrid">A mix of both</option>
+              <option value="online">{t("Online")}</option>
+              <option value="offline">{t("In person")}</option>
+              <option value="hybrid">{t("A mix of both")}</option>
             </select>
           </Field>
         </div>
@@ -316,7 +325,7 @@ export function ProfileWizard({
             <select className={inputClass} {...form.register("groupSize")}>
               {[2, 3, 4, 5, 6, 8, 10, 12].map((size) => (
                 <option key={size} value={size}>
-                  {size} students
+                  {size} {t("students")}
                 </option>
               ))}
             </select>
@@ -327,28 +336,31 @@ export function ProfileWizard({
           >
             <input
               className={inputClass}
-              placeholder="e.g. English"
+              placeholder={t("e.g. English")}
               {...form.register("language")}
             />
           </Field>
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/40 p-4">
             <input
               type="checkbox"
-              className="mt-1 size-4 accent-indigo-600"
+              className="mt-1 size-4 accent-[var(--brand-accent)]"
               {...form.register("showInDiscovery")}
             />
             <span>
               <span className="block text-sm font-medium">
-                Show my profile in student discovery
+                {t("Show my profile in student discovery")}
               </span>
               <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                When turned off, other students cannot find your profile,
-                subjects, availability, or study preferences.
+                {t(
+                  "When turned off, other students cannot find your profile, subjects, availability, or study preferences.",
+                )}
               </span>
             </span>
           </label>
-          <div className="rounded-2xl border border-border bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
-            You can update these details and your discovery visibility anytime.
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
+            {t(
+              "You can update these details and your discovery visibility anytime.",
+            )}
           </div>
         </div>
       )}
@@ -356,9 +368,9 @@ export function ProfileWizard({
       {actionError && (
         <p
           role="alert"
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
+          className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
-          {actionError}
+          {t(actionError)}
         </p>
       )}
 
@@ -367,25 +379,26 @@ export function ProfileWizard({
           <Button
             type="button"
             variant="outline"
-            className="h-11 rounded-xl px-4"
+            className="h-11 rounded-md px-4"
             onClick={() => setStep((current) => current - 1)}
           >
-            <ArrowLeft className="mr-2" aria-hidden="true" /> Back
+            <ArrowLeft className="mr-2" aria-hidden="true" /> {t("Back")}
           </Button>
         )}
         {step < steps.length - 1 ? (
           <Button
             type="button"
-            className="h-11 flex-1 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+            className="h-11 flex-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={nextStep}
           >
-            Continue <ArrowRight className="ml-auto" aria-hidden="true" />
+            {t("Continue")}{" "}
+            <ArrowRight className="ml-auto" aria-hidden="true" />
           </Button>
         ) : (
           <Button
             type="submit"
             disabled={form.formState.isSubmitting}
-            className="h-11 flex-1 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+            className="h-11 flex-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {form.formState.isSubmitting ? (
               <>
@@ -393,12 +406,12 @@ export function ProfileWizard({
                   className="mr-2 animate-spin"
                   aria-hidden="true"
                 />{" "}
-                Saving profile…
+                {t("Saving profile…")}
               </>
             ) : (
               <>
                 <Check className="mr-2" aria-hidden="true" />{" "}
-                {mode === "onboarding" ? "Finish setup" : "Save changes"}
+                {mode === "onboarding" ? t("Finish setup") : t("Save changes")}
               </>
             )}
           </Button>
