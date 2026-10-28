@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { Flag, ShieldBan } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ export function SafetyActions({
   messageId?: string;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const [reporting, setReporting] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -34,7 +36,7 @@ export function SafetyActions({
         method: "POST",
         body: JSON.stringify({ student_id: studentId }),
       });
-      toast.success(`${studentName} has been blocked.`);
+      toast.success(t("{name} has been blocked.", { name: studentName }));
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -60,7 +62,7 @@ export function SafetyActions({
           details: String(form.get("details") ?? ""),
         }),
       });
-      toast.success("Report sent for review.");
+      toast.success(t("Report sent for review."));
       setReporting(false);
     } catch (error) {
       toast.error(
@@ -78,15 +80,15 @@ export function SafetyActions({
           type="button"
           disabled={busy}
           onClick={() => void blockStudent()}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-200"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover: disabled:opacity-50 dark:hover:"
         >
-          <ShieldBan size={13} aria-hidden="true" /> Block
+          <ShieldBan size={13} aria-hidden="true" /> {t("Block")}
         </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => setReporting((value) => !value)}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50 dark:hover:bg-amber-950/40 dark:hover:text-amber-200"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 dark:hover:bg-accent dark:hover:"
         >
           <Flag size={13} aria-hidden="true" />
           {messageId ? "Report message" : "Report profile"}
@@ -95,10 +97,10 @@ export function SafetyActions({
       {reporting && (
         <form
           onSubmit={(event) => void report(event)}
-          className="mt-2 grid w-full max-w-sm gap-2 rounded-xl border border-border bg-card p-3 text-left shadow-lg"
+          className="mt-2 grid w-full max-w-sm gap-2 rounded-md border border-border bg-card p-3 text-left shadow-sm"
         >
           <label className="text-xs font-medium">
-            Reason
+            {t("Reason")}
             <select name="reason" className="field-control mt-1" required>
               {reasons.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -108,7 +110,7 @@ export function SafetyActions({
             </select>
           </label>
           <label className="text-xs font-medium">
-            Details (optional)
+            {t("Details (optional)")}
             <textarea
               name="details"
               maxLength={1000}
@@ -122,14 +124,14 @@ export function SafetyActions({
               onClick={() => setReporting(false)}
               className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
-              Send report
+              {t("Send report")}
             </button>
           </div>
         </form>

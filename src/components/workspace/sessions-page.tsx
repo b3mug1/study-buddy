@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import {
   CalendarDays,
   CalendarClock,
@@ -28,6 +29,9 @@ type CalendarMonth = {
 };
 
 export function SessionsPage() {
+  const { t, locale } = useI18n();
+  const intlLocale =
+    locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [history, setHistory] = useState<StudySession[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -96,7 +100,7 @@ export function SessionsPage() {
           invited_user_ids: invitedUserIds,
         }),
       });
-      toast.success("Study session scheduled.");
+      toast.success(t("Study session scheduled."));
       formElement.reset();
       await load();
     } catch (createError) {
@@ -117,7 +121,7 @@ export function SessionsPage() {
         method: "POST",
         body: JSON.stringify({ accept }),
       });
-      toast.success(accept ? "You’re in." : "Invitation declined.");
+      toast.success(accept ? t("You’re in.") : t("Invitation declined."));
       await load();
     } catch (responseError) {
       toast.error(
@@ -136,7 +140,7 @@ export function SessionsPage() {
       await authenticatedApiRequest(`sessions/${sessionId}`, {
         method: "DELETE",
       });
-      toast.success("Study session cancelled.");
+      toast.success(t("Study session cancelled."));
       await load();
     } catch (cancelError) {
       toast.error(
@@ -156,7 +160,7 @@ export function SessionsPage() {
         method: "POST",
         body: "{}",
       });
-      toast.success("Study session marked as completed.");
+      toast.success(t("Study session marked as completed."));
       await load();
     } catch (completeError) {
       toast.error(
@@ -171,14 +175,17 @@ export function SessionsPage() {
 
   function showCalendar() {
     const anchor = sessions[0] ? new Date(sessions[0].starts_at) : new Date();
-    setCalendar(makeCalendarMonth(anchor));
+    setCalendar(makeCalendarMonth(anchor, intlLocale));
     setView("calendar");
   }
 
   function shiftCalendarMonth(offset: number) {
     if (!calendar) return;
     setCalendar(
-      makeCalendarMonth(new Date(calendar.year, calendar.month + offset, 1)),
+      makeCalendarMonth(
+        new Date(calendar.year, calendar.month + offset, 1),
+        intlLocale,
+      ),
     );
   }
 
@@ -187,27 +194,30 @@ export function SessionsPage() {
   return (
     <main>
       <div>
-        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-          Make a plan, learn together
+        <p className="text-sm font-semibold text-primary">
+          {t("Make a plan, learn together")}
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Study sessions
+          {t("Study sessions")}
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Schedule a session, invite connected students, and manage responses in
-          one place.
+          {t(
+            "Schedule a session, invite connected students, and manage responses in one place.",
+          )}
         </p>
       </div>
 
       <section className="surface mt-7 p-5 sm:p-6">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <CalendarPlus size={19} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="font-semibold">Plan a study session</h2>
+            <h2 className="font-semibold">{t("Plan a study session")}</h2>
             <p className="text-xs text-muted-foreground">
-              Choose a timezone-aware start time and invite your connections.
+              {t(
+                "Choose a timezone-aware start time and invite your connections.",
+              )}
             </p>
           </div>
         </div>
@@ -216,27 +226,27 @@ export function SessionsPage() {
           className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
         >
           <label className="text-sm font-medium">
-            Subject
+            {t("Subject")}
             <input
               name="subject"
               required
               maxLength={80}
               className="field-control mt-1.5"
-              placeholder="e.g. Biology"
+              placeholder={t("e.g. Biology")}
             />
           </label>
           <label className="text-sm font-medium">
-            Topic
+            {t("Topic")}
             <input
               name="topic"
               required
               maxLength={160}
               className="field-control mt-1.5"
-              placeholder="e.g. Cell membranes"
+              placeholder={t("e.g. Cell membranes")}
             />
           </label>
           <label className="text-sm font-medium">
-            Date and time
+            {t("Date and time")}
             <input
               name="starts_at"
               required
@@ -246,7 +256,7 @@ export function SessionsPage() {
             />
           </label>
           <label className="text-sm font-medium">
-            Duration
+            {t("Duration")}
             <select
               name="duration_minutes"
               defaultValue="60"
@@ -254,25 +264,25 @@ export function SessionsPage() {
             >
               {[30, 45, 60, 90, 120, 180].map((minutes) => (
                 <option key={minutes} value={minutes}>
-                  {minutes} minutes
+                  {t("{count} minutes", { count: minutes })}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-sm font-medium">
-            Study format
+            {t("Study format")}
             <select
               name="study_format"
               defaultValue="online"
               className="field-control mt-1.5"
             >
-              <option value="online">Online</option>
-              <option value="offline">In person</option>
-              <option value="hybrid">Hybrid</option>
+              <option value="online">{t("Online")}</option>
+              <option value="offline">{t("In person")}</option>
+              <option value="hybrid">{t("Hybrid")}</option>
             </select>
           </label>
           <label className="text-sm font-medium lg:col-span-2">
-            Invite connected students
+            {t("Invite connected students")}
             <select
               name="invited_user_ids"
               multiple
@@ -288,23 +298,23 @@ export function SessionsPage() {
               ))}
             </select>
             <span className="mt-1 block text-xs font-normal text-muted-foreground">
-              Hold Ctrl (Windows) or Command (Mac) to choose several.
+              {t("Hold Ctrl (Windows) or Command (Mac) to choose several.")}
             </span>
           </label>
           <label className="text-sm font-medium lg:col-span-2">
-            Meeting details
+            {t("Meeting details")}
             <textarea
               name="meeting_details"
               maxLength={1000}
               rows={3}
               className="field-control mt-1.5 resize-y"
-              placeholder="Meeting link, library room, or other details"
+              placeholder={t("Meeting link, library room, or other details")}
             />
           </label>
           <button
             type="submit"
             disabled={creating}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 lg:col-span-4"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50 lg:col-span-4"
           >
             {creating ? (
               <LoaderCircle
@@ -315,7 +325,7 @@ export function SessionsPage() {
             ) : (
               <CalendarPlus size={16} aria-hidden="true" />
             )}
-            {creating ? "Scheduling…" : "Schedule session"}
+            {creating ? t("Scheduling…") : t("Schedule session")}
           </button>
         </form>
       </section>
@@ -323,7 +333,7 @@ export function SessionsPage() {
       {error && (
         <p
           role="alert"
-          className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="mt-5 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive "
         >
           {error}
         </p>
@@ -332,37 +342,37 @@ export function SessionsPage() {
       <section className="mt-7">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="font-semibold">Your upcoming sessions</h2>
+            <h2 className="font-semibold">{t("Your upcoming sessions")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Times are shown in your device’s local timezone.
+              {t("Times are shown in your device’s local timezone.")}
             </p>
           </div>
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
             {sessions.length}
           </span>
-          <div className="ml-2 inline-flex rounded-xl border border-border p-1">
+          <div className="ml-2 inline-flex rounded-md border border-border p-1">
             <button
               type="button"
               aria-pressed={view === "list"}
               onClick={() => setView("list")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "list" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200" : "text-muted-foreground"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "list" ? "bg-accent text-accent-foreground dark:bg-accent " : "text-muted-foreground"}`}
             >
-              List
+              {t("List")}
             </button>
             <button
               type="button"
               aria-pressed={view === "calendar"}
               onClick={showCalendar}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "calendar" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200" : "text-muted-foreground"}`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${view === "calendar" ? "bg-accent text-accent-foreground dark:bg-accent " : "text-muted-foreground"}`}
             >
-              <CalendarDays size={14} aria-hidden="true" /> Calendar
+              <CalendarDays size={14} aria-hidden="true" /> {t("Calendar")}
             </button>
           </div>
         </div>
         {loading ? (
           <div
             className="surface h-48 animate-pulse bg-muted/60"
-            aria-label="Loading study sessions"
+            aria-label={t("Loading study sessions")}
           />
         ) : view === "calendar" && calendar ? (
           <SessionCalendar
@@ -385,20 +395,26 @@ export function SessionsPage() {
               return (
                 <li key={session.id} className="surface p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                    <div className="grid min-w-20 place-items-center rounded-2xl bg-indigo-50 px-3 py-3 text-center text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                    <div className="grid min-w-20 place-items-center rounded-lg bg-accent px-3 py-3 text-center text-accent-foreground dark:bg-accent ">
                       <span className="text-xs font-semibold uppercase">
-                        {new Date(session.starts_at).toLocaleDateString([], {
-                          month: "short",
-                        })}
+                        {new Date(session.starts_at).toLocaleDateString(
+                          intlLocale,
+                          {
+                            month: "short",
+                          },
+                        )}
                       </span>
                       <span className="text-2xl font-bold">
                         {new Date(session.starts_at).getDate()}
                       </span>
                       <span className="text-xs">
-                        {new Date(session.starts_at).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
+                        {new Date(session.starts_at).toLocaleTimeString(
+                          intlLocale,
+                          {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          },
+                        )}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
@@ -407,15 +423,17 @@ export function SessionsPage() {
                           {session.subject}: {session.topic}
                         </h3>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
-                          {session.study_format}
+                          {t(session.study_format)}
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Organized by {session.owner_name} ·{" "}
-                        {session.duration_minutes} minutes
+                        {t("Organized by")} {session.owner_name} ·{" "}
+                        {t("{count} minutes", {
+                          count: session.duration_minutes,
+                        })}
                       </p>
                       {session.meeting_details && (
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-5 text-slate-600 dark:text-slate-300">
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
                           {session.meeting_details}
                         </p>
                       )}
@@ -428,7 +446,10 @@ export function SessionsPage() {
                                 participant.status === "accepted",
                             ).length
                           }{" "}
-                          / {session.max_participants} attending
+                          /{" "}
+                          {t("{count} attending", {
+                            count: session.max_participants,
+                          })}
                         </span>
                         <span className="inline-flex items-center gap-1.5">
                           {session.study_format === "online" ? (
@@ -452,44 +473,45 @@ export function SessionsPage() {
                           type="button"
                           disabled={busyId === session.id}
                           onClick={() => void respond(session.id, false)}
-                          className="inline-flex h-9 items-center gap-1 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted"
+                          className="inline-flex h-9 items-center gap-1 rounded-md border border-border px-3 text-xs font-semibold hover:bg-muted"
                         >
-                          <X size={14} aria-hidden="true" /> Decline
+                          <X size={14} aria-hidden="true" /> {t("Decline")}
                         </button>
                         <button
                           type="button"
                           disabled={busyId === session.id}
                           onClick={() => void respond(session.id, true)}
-                          className="inline-flex h-9 items-center gap-1 rounded-xl bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                          className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)]"
                         >
-                          <Check size={14} aria-hidden="true" /> Accept
+                          <Check size={14} aria-hidden="true" /> {t("Accept")}
                         </button>
                       </div>
                     ) : myParticipant?.status === "declined" ? (
                       <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                        Declined
+                        {t("Declined")}
                       </span>
                     ) : isOwner && hasStarted ? (
                       <button
                         type="button"
                         disabled={busyId === session.id}
                         onClick={() => void complete(session.id)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
                       >
-                        <Check size={14} aria-hidden="true" /> Mark completed
+                        <Check size={14} aria-hidden="true" />{" "}
+                        {t("Mark completed")}
                       </button>
                     ) : isOwner ? (
                       <button
                         type="button"
                         disabled={busyId === session.id}
                         onClick={() => void cancel(session.id)}
-                        className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/40"
+                        className="rounded-md border border-border px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50 "
                       >
-                        Cancel session
+                        {t("Cancel session")}
                       </button>
                     ) : (
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                        Accepted
+                      <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground dark:bg-accent ">
+                        {t("Accepted")}
                       </span>
                     )}
                   </div>
@@ -504,12 +526,12 @@ export function SessionsPage() {
           <div className="surface flex min-h-48 flex-col items-center justify-center px-6 text-center">
             <CalendarClock
               size={24}
-              className="text-indigo-600 dark:text-indigo-400"
+              className="text-primary"
               aria-hidden="true"
             />
-            <h3 className="mt-3 font-semibold">No upcoming sessions</h3>
+            <h3 className="mt-3 font-semibold">{t("No upcoming sessions")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Schedule a session and invite one of your connections.
+              {t("Schedule a session and invite one of your connections.")}
             </p>
           </div>
         )}
@@ -518,9 +540,9 @@ export function SessionsPage() {
       <section className="mt-7">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h2 className="font-semibold">Recent study outcomes</h2>
+            <h2 className="font-semibold">{t("Recent study outcomes")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Record what the group learned and what to prepare next.
+              {t("Record what the group learned and what to prepare next.")}
             </p>
           </div>
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
@@ -542,13 +564,16 @@ export function SessionsPage() {
                     className="text-xs text-muted-foreground"
                     dateTime={session.starts_at}
                   >
-                    {new Date(session.starts_at).toLocaleDateString([], {
-                      dateStyle: "medium",
-                    })}
+                    {new Date(session.starts_at).toLocaleDateString(
+                      intlLocale,
+                      {
+                        dateStyle: "medium",
+                      },
+                    )}
                   </time>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Organized by {session.owner_name}
+                  {t("Organized by")} {session.owner_name}
                 </p>
                 {session.participants.some(
                   (participant) =>
@@ -560,7 +585,7 @@ export function SessionsPage() {
           </ul>
         ) : (
           <div className="surface px-5 py-6 text-sm text-muted-foreground">
-            Completed sessions and their notes will appear here.
+            {t("Completed sessions and their notes will appear here.")}
           </div>
         )}
       </section>
@@ -575,6 +600,7 @@ function SessionOutcomeEditor({
   session: StudySession;
   onSaved: () => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
@@ -589,7 +615,7 @@ function SessionOutcomeEditor({
           next_steps: values.get("next_steps"),
         }),
       });
-      toast.success("Session notes saved.");
+      toast.success(t("Session notes saved."));
       await onSaved();
     } catch (error) {
       toast.error(
@@ -605,41 +631,41 @@ function SessionOutcomeEditor({
   return (
     <form
       onSubmit={(event) => void save(event)}
-      className="mt-4 grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2"
+      className="mt-4 grid gap-3 rounded-md bg-muted/40 p-4 sm:grid-cols-2"
     >
       <label className="text-xs font-semibold">
-        What did you study?
+        {t("What did you study?")}
         <textarea
           name="summary"
           defaultValue={session.summary}
           maxLength={1200}
           rows={3}
           className="field-control mt-1.5 resize-y"
-          placeholder="Topics, exercises, or questions covered"
+          placeholder={t("Topics, exercises, or questions covered")}
         />
       </label>
       <label className="text-xs font-semibold">
-        Prepare for next time
+        {t("Prepare for next time")}
         <textarea
           name="next_steps"
           defaultValue={session.next_steps}
           maxLength={1200}
           rows={3}
           className="field-control mt-1.5 resize-y"
-          placeholder="Tasks or topics for the next session"
+          placeholder={t("Tasks or topics for the next session")}
         />
       </label>
       <button
         type="submit"
         disabled={saving}
-        className="inline-flex h-9 items-center justify-center gap-2 justify-self-start rounded-xl border border-border px-3 text-xs font-semibold hover:bg-card disabled:opacity-50 sm:col-span-2"
+        className="inline-flex h-9 items-center justify-center gap-2 justify-self-start rounded-md border border-border px-3 text-xs font-semibold hover:bg-card disabled:opacity-50 sm:col-span-2"
       >
         {saving ? (
           <LoaderCircle size={14} className="animate-spin" />
         ) : (
           <Check size={14} />
         )}
-        Save session notes
+        {t("Save session notes")}
       </button>
     </form>
   );
@@ -654,6 +680,9 @@ function SessionCalendar({
   calendar: CalendarMonth;
   onShiftMonth: (offset: number) => void;
 }) {
+  const { t, locale } = useI18n();
+  const intlLocale =
+    locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
   const cells = Array.from({ length: 42 }, (_, index) => {
     const day = index - calendar.leadingDays + 1;
     return day > 0 && day <= calendar.totalDays ? day : null;
@@ -662,13 +691,15 @@ function SessionCalendar({
   return (
     <section
       className="surface p-4 sm:p-5"
-      aria-label={`${calendar.label} study session calendar`}
+      aria-label={t("{month} study session calendar", {
+        month: calendar.label,
+      })}
     >
       <div className="mb-4 flex items-center justify-between">
         <button
           type="button"
           onClick={() => onShiftMonth(-1)}
-          aria-label="Previous month"
+          aria-label={t("Previous month")}
           className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
         >
           ←
@@ -677,7 +708,7 @@ function SessionCalendar({
         <button
           type="button"
           onClick={() => onShiftMonth(1)}
-          aria-label="Next month"
+          aria-label={t("Next month")}
           className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
         >
           →
@@ -689,7 +720,7 @@ function SessionCalendar({
             key={weekday}
             className="py-2 text-center text-xs font-semibold text-muted-foreground"
           >
-            {weekday}
+            {t(weekday)}
           </div>
         ))}
         {cells.map((day, index) => {
@@ -707,7 +738,7 @@ function SessionCalendar({
           return (
             <div
               key={`${calendar.year}-${calendar.month}-${index}`}
-              className={`min-h-20 rounded-xl border p-1.5 sm:min-h-24 sm:p-2 ${day ? "border-border bg-card" : "border-transparent bg-muted/30"}`}
+              className={`min-h-20 rounded-md border p-1.5 sm:min-h-24 sm:p-2 ${day ? "border-border bg-card" : "border-transparent bg-muted/30"}`}
             >
               {day !== null && (
                 <>
@@ -718,13 +749,16 @@ function SessionCalendar({
                     {daySessions.map((session) => (
                       <li
                         key={session.id}
-                        className="truncate rounded-md bg-indigo-50 px-1.5 py-1 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                        className="truncate rounded-md bg-[var(--color-success)]/12 px-1.5 py-1 text-[10px] font-semibold text-[var(--color-success)]"
                         title={`${session.subject}: ${session.topic}`}
                       >
-                        {new Date(session.starts_at).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}{" "}
+                        {new Date(session.starts_at).toLocaleTimeString(
+                          intlLocale,
+                          {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          },
+                        )}{" "}
                         {session.subject}
                       </li>
                     ))}
@@ -739,13 +773,13 @@ function SessionCalendar({
   );
 }
 
-function makeCalendarMonth(date: Date): CalendarMonth {
+function makeCalendarMonth(date: Date, intlLocale: string): CalendarMonth {
   const year = date.getFullYear();
   const month = date.getMonth();
   return {
     year,
     month,
-    label: new Intl.DateTimeFormat(undefined, {
+    label: new Intl.DateTimeFormat(intlLocale, {
       month: "long",
       year: "numeric",
     }).format(new Date(year, month, 1)),
