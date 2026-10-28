@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import {
   ArrowRight,
   BookOpen,
@@ -8,8 +9,8 @@ import {
   Search,
   UsersRound,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/navigation/link";
+import { useNavigate } from "react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -22,7 +23,8 @@ import { GroupCollaborationPanel } from "@/components/workspace/group-collaborat
 type CreatedGroup = { id: string };
 
 export function GroupsPage() {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<StudyGroup[]>([]);
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
@@ -72,9 +74,9 @@ export function GroupsPage() {
           max_members: Number(form.get("max_members")),
         }),
       });
-      toast.success("Your study group is ready.");
+      toast.success(t("Your study group is ready."));
       formElement.reset();
-      router.push(`/groups/${group.id}`);
+      navigate(`/groups/${group.id}`);
     } catch (createError) {
       toast.error(
         createError instanceof Error
@@ -95,8 +97,8 @@ export function GroupsPage() {
       );
       toast.success(
         result.status === "joined"
-          ? "You joined the study group."
-          : "Your request was sent to the group owner.",
+          ? t("You joined the study group.")
+          : t("Your request was sent to the group owner."),
       );
       await load();
     } catch (joinError) {
@@ -113,27 +115,28 @@ export function GroupsPage() {
   return (
     <main>
       <div>
-        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-          Learn together
+        <p className="text-sm font-semibold text-primary">
+          {t("Learn together")}
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Study groups
+          {t("Study groups")}
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Find a focused group for a subject or start one with the study
+          {t("Find a focused group for a subject or start one with the study")}
         </p>
       </div>
 
       <section className="surface mt-7 p-5 sm:p-6">
         <div className="flex items-center gap-2">
-          <span className="grid size-9 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="grid size-9 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <Plus size={18} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="font-semibold">Create a study group</h2>
+            <h2 className="font-semibold">{t("Create a study group")}</h2>
             <p className="text-xs text-muted-foreground">
-              Set a subject, choose public or private, and invite a few
-              connections.
+              {t(
+                "Set a subject, choose public or private, and invite a few connections.",
+              )}
             </p>
           </div>
         </div>
@@ -142,28 +145,28 @@ export function GroupsPage() {
           onSubmit={(event) => void createGroup(event)}
         >
           <label className="sm:col-span-1 lg:col-span-2">
-            <span className="sr-only">Group name</span>
+            <span className="sr-only">{t("Group name")}</span>
             <input
               required
               minLength={3}
               maxLength={100}
               name="name"
               className="field-control"
-              placeholder="Group name"
+              placeholder={t("Group name")}
             />
           </label>
           <label className="sm:col-span-1 lg:col-span-1">
-            <span className="sr-only">Group subject</span>
+            <span className="sr-only">{t("Group subject")}</span>
             <input
               required
               maxLength={80}
               name="subject"
               className="field-control"
-              placeholder="Subject"
+              placeholder={t("Subject")}
             />
           </label>
           <label>
-            <span className="sr-only">Maximum group members</span>
+            <span className="sr-only">{t("Maximum group members")}</span>
             <select
               className="field-control"
               name="max_members"
@@ -177,32 +180,32 @@ export function GroupsPage() {
             </select>
           </label>
           <label>
-            <span className="sr-only">Group visibility</span>
+            <span className="sr-only">{t("Group visibility")}</span>
             <select
               className="field-control"
               name="visibility"
               defaultValue="public"
             >
-              <option value="public">Public</option>
-              <option value="private">Private</option>
+              <option value="public">{t("Public")}</option>
+              <option value="private">{t("Private")}</option>
             </select>
           </label>
           <label className="sm:col-span-2 lg:col-span-4">
-            <span className="sr-only">Group description</span>
+            <span className="sr-only">{t("Group description")}</span>
             <input
               maxLength={1000}
               name="description"
               className="field-control"
-              placeholder="A short description (optional)"
+              placeholder={t("A short description (optional)")}
             />
           </label>
           <button
             type="submit"
             disabled={creating}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-[var(--primary-hover)] disabled:opacity-60"
           >
             <Plus size={16} aria-hidden="true" />
-            {creating ? "Creating…" : "Create group"}
+            {creating ? "Creating…" : t("Create group")}
           </button>
         </form>
       </section>
@@ -215,40 +218,40 @@ export function GroupsPage() {
         }}
       >
         <label className="relative flex-1">
-          <span className="sr-only">Search study groups</span>
+          <span className="sr-only">{t("Search study groups")}</span>
           <Search
             size={17}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <input
             className="field-control pl-9"
-            placeholder="Search group names"
+            placeholder={t("Search group names")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
         <label className="sm:w-56">
-          <span className="sr-only">Filter study groups by subject</span>
+          <span className="sr-only">{t("Filter study groups by subject")}</span>
           <input
             className="field-control"
-            placeholder="Filter by subject"
+            placeholder={t("Filter by subject")}
             value={subjectFilter}
             onChange={(event) => setSubjectFilter(event.target.value)}
           />
         </label>
         <button
           type="submit"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold transition hover:bg-muted"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border px-4 text-sm font-semibold transition hover:bg-muted"
         >
-          <Search size={16} aria-hidden="true" /> Search groups
+          <Search size={16} aria-hidden="true" /> {t("Search groups")}
         </button>
       </form>
 
       {error && (
         <p
           role="alert"
-          className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="mt-5 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive "
         >
           {error}
         </p>
@@ -269,7 +272,7 @@ export function GroupsPage() {
           {groups.map((group) => (
             <article key={group.id} className="surface flex flex-col p-5">
               <div className="flex items-start justify-between gap-3">
-                <span className="grid size-11 place-items-center rounded-2xl bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-200">
+                <span className="grid size-11 place-items-center rounded-lg bg-accent text-accent-foreground dark:bg-accent ">
                   <BookOpen size={19} aria-hidden="true" />
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize text-muted-foreground">
@@ -280,7 +283,7 @@ export function GroupsPage() {
                 </span>
               </div>
               <h2 className="mt-4 text-lg font-semibold">{group.name}</h2>
-              <p className="mt-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+              <p className="mt-1 text-sm font-medium text-primary">
                 {group.subject}
               </p>
               <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
@@ -289,32 +292,32 @@ export function GroupsPage() {
               </p>
               <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 <UsersRound size={15} aria-hidden="true" />
-                {group.member_count} / {group.max_members} members
+                {group.member_count} / {group.max_members} {t("members")}
                 <span className="ml-auto truncate">
-                  Hosted by {group.owner_name}
+                  {t("Hosted by")} {group.owner_name}
                 </span>
               </div>
               <div className="mt-auto flex gap-2 border-t border-border pt-4">
                 <Link
                   href={`/groups/${group.id}`}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-medium hover:bg-muted"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
                 >
-                  View group <ArrowRight size={15} aria-hidden="true" />
+                  {t("View group")} <ArrowRight size={15} aria-hidden="true" />
                 </Link>
                 {group.is_member ? (
-                  <span className="inline-flex h-10 items-center rounded-xl bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                    Joined
+                  <span className="inline-flex h-10 items-center rounded-md bg-accent px-3 text-xs font-semibold text-accent-foreground dark:bg-accent ">
+                    {t("Joined")}
                   </span>
                 ) : group.join_status === "pending" ? (
-                  <span className="inline-flex h-10 items-center rounded-xl bg-amber-50 px-3 text-xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-                    Requested
+                  <span className="inline-flex h-10 items-center rounded-md bg-accent px-3 text-xs font-semibold text-accent-foreground dark:bg-accent ">
+                    {t("Requested")}
                   </span>
                 ) : (
                   <button
                     type="button"
                     disabled={joiningId === group.id}
                     onClick={() => void joinGroup(group)}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-60"
                   >
                     {group.visibility === "private" ? "Request" : "Join"}
                   </button>
@@ -325,14 +328,10 @@ export function GroupsPage() {
         </section>
       ) : !error ? (
         <div className="surface mt-5 flex min-h-52 flex-col items-center justify-center px-6 text-center">
-          <UsersRound
-            size={24}
-            className="text-indigo-600 dark:text-indigo-400"
-            aria-hidden="true"
-          />
-          <h2 className="mt-3 font-semibold">No study groups found</h2>
+          <UsersRound size={24} className="text-primary" aria-hidden="true" />
+          <h2 className="mt-3 font-semibold">{t("No study groups found")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a group or try searching for another subject.
+            {t("Create a group or try searching for another subject.")}
           </p>
         </div>
       ) : null}
@@ -341,6 +340,7 @@ export function GroupsPage() {
 }
 
 export function GroupDetailsPage({ groupId }: { groupId: string }) {
+  const { t } = useI18n();
   const [group, setGroup] = useState<StudyGroup>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -414,7 +414,7 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
     return (
       <div
         className="surface h-72 animate-pulse bg-muted/60"
-        aria-label="Loading group"
+        aria-label={t("Loading group")}
       />
     );
   }
@@ -423,13 +423,13 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
       <div>
         <Link
           href="/groups"
-          className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          className="text-sm font-medium text-primary hover:underline "
         >
-          ← Back to groups
+          {t("← Back to groups")}
         </Link>
         <p
           role="alert"
-          className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="mt-5 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive "
         >
           {error || "Study group not found."}
         </p>
@@ -446,13 +446,13 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
     <main>
       <Link
         href="/groups"
-        className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+        className="text-sm font-medium text-primary hover:underline "
       >
-        ← Back to study groups
+        {t("← Back to study groups")}
       </Link>
       <section className="surface mt-5 p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="grid size-14 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground dark:bg-accent ">
             <BookOpen size={23} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
@@ -464,15 +464,13 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                 {group.visibility}
               </span>
             </div>
-            <p className="mt-1 font-medium text-indigo-600 dark:text-indigo-400">
-              {group.subject}
-            </p>
+            <p className="mt-1 font-medium text-primary">{group.subject}</p>
             <p className="mt-3 max-w-3xl leading-6 text-muted-foreground">
               {group.description || "A focused study group."}
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
-              Hosted by {group.owner_name} · {group.member_count} /{" "}
-              {group.max_members} members
+              {t("Hosted by")} {group.owner_name} · {group.member_count} /{" "}
+              {group.max_members} {t("members")}
             </p>
           </div>
           {group.is_member ? (
@@ -481,9 +479,9 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                 <button
                   type="button"
                   onClick={() => setEditing((value) => !value)}
-                  className="rounded-xl border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+                  className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
                 >
-                  {editing ? "Close settings" : "Edit settings"}
+                  {editing ? t("Close settings") : t("Edit settings")}
                 </button>
               )}
               {!currentOwnerView && (
@@ -498,15 +496,15 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                       "You left the study group.",
                     )
                   }
-                  className="rounded-xl border border-border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
                 >
-                  Leave
+                  {t("Leave")}
                 </button>
               )}
             </div>
           ) : group.join_status === "pending" ? (
-            <span className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-              Request pending
+            <span className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground dark:bg-accent ">
+              {t("Request pending")}
             </span>
           ) : (
             <button
@@ -522,11 +520,11 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                     : "You joined the group.",
                 )
               }
-              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
               {group.visibility === "private"
                 ? "Request to join"
-                : "Join group"}
+                : t("Join group")}
             </button>
           )}
         </div>
@@ -537,7 +535,7 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
             className="mt-6 grid gap-3 border-t border-border pt-5 sm:grid-cols-2"
           >
             <label className="text-sm font-medium">
-              Group name
+              {t("Group name")}
               <input
                 name="name"
                 required
@@ -548,7 +546,7 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
               />
             </label>
             <label className="text-sm font-medium">
-              Subject
+              {t("Subject")}
               <input
                 name="subject"
                 required
@@ -558,18 +556,18 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
               />
             </label>
             <label className="text-sm font-medium">
-              Visibility
+              {t("Visibility")}
               <select
                 name="visibility"
                 defaultValue={group.visibility}
                 className="field-control mt-1.5"
               >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
+                <option value="public">{t("Public")}</option>
+                <option value="private">{t("Private")}</option>
               </select>
             </label>
             <label className="text-sm font-medium">
-              Maximum members
+              {t("Maximum members")}
               <select
                 name="max_members"
                 defaultValue={group.max_members}
@@ -583,7 +581,7 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
               </select>
             </label>
             <label className="text-sm font-medium sm:col-span-2">
-              Description
+              {t("Description")}
               <textarea
                 name="description"
                 maxLength={1000}
@@ -595,9 +593,9 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
             <button
               type="submit"
               disabled={busy === "settings"}
-              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="h-10 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
-              Save group settings
+              {t("Save group settings")}
             </button>
           </form>
         )}
@@ -616,14 +614,14 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
       {group.is_member && (
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           <section className="surface p-5">
-            <h2 className="font-semibold">Group members</h2>
+            <h2 className="font-semibold">{t("Group members")}</h2>
             <ul className="mt-4 space-y-2">
               {group.members.map((member) => (
                 <li
                   key={member.student_id}
-                  className="flex items-center gap-3 rounded-xl bg-muted/50 p-3"
+                  className="flex items-center gap-3 rounded-md bg-muted/50 p-3"
                 >
-                  <span className="grid size-9 place-items-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700 dark:bg-violet-900 dark:text-violet-200">
+                  <span className="grid size-9 place-items-center rounded-full text-xs font-semibold text-accent-foreground ">
                     {member.full_name
                       .split(/\s+/)
                       .slice(0, 2)
@@ -650,9 +648,9 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                           "Member removed.",
                         )
                       }
-                      className="rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      className="rounded-lg px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 "
                     >
-                      Remove
+                      {t("Remove")}
                     </button>
                   )}
                 </li>
@@ -664,9 +662,9 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
             <section className="surface p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-semibold">Join requests</h2>
+                  <h2 className="font-semibold">{t("Join requests")}</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Approve students requesting this private group.
+                    {t("Approve students requesting this private group.")}
                   </p>
                 </div>
                 <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">
@@ -678,7 +676,7 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                   {pendingRequests.map((request) => (
                     <li
                       key={request.id}
-                      className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/50 p-3"
+                      className="flex flex-wrap items-center gap-3 rounded-md bg-muted/50 p-3"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">
@@ -699,12 +697,12 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                               method: "POST",
                               body: JSON.stringify({ approve: false }),
                             },
-                            "Request declined.",
+                            t("Request declined."),
                           )
                         }
                         className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
                       >
-                        Decline
+                        {t("Decline")}
                       </button>
                       <button
                         type="button"
@@ -720,16 +718,16 @@ export function GroupDetailsPage({ groupId }: { groupId: string }) {
                             "Student added to the group.",
                           )
                         }
-                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                        className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)]"
                       >
-                        Approve
+                        {t("Approve")}
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-4 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
-                  No pending join requests.
+                <p className="mt-4 rounded-md bg-muted/50 p-4 text-sm text-muted-foreground">
+                  {t("No pending join requests.")}
                 </p>
               )}
             </section>

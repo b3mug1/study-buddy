@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import {
   BookOpenText,
   Check,
@@ -43,6 +44,9 @@ export function GroupCollaborationPanel({
   ownerId: string;
   currentUserId: string;
 }) {
+  const { t, locale } = useI18n();
+  const intlLocale =
+    locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
   const [tasks, setTasks] = useState<GroupTask[]>([]);
   const [materials, setMaterials] = useState<GroupMaterial[]>([]);
   const [focus, setFocus] = useState<GroupFocusSession | null>(null);
@@ -118,7 +122,7 @@ export function GroupCollaborationPanel({
         }),
       });
       form.reset();
-      toast.success("Group task created.");
+      toast.success(t("Group task created."));
       await loadGroupContent();
     } catch (createError) {
       toast.error(
@@ -157,7 +161,7 @@ export function GroupCollaborationPanel({
         method: "DELETE",
       });
       await loadGroupContent();
-      toast.success("Task deleted.");
+      toast.success(t("Task deleted."));
     } catch (deleteError) {
       toast.error(
         deleteError instanceof Error
@@ -188,7 +192,7 @@ export function GroupCollaborationPanel({
       });
       form.reset();
       await loadGroupContent();
-      toast.success("Shared material added.");
+      toast.success(t("Shared material added."));
     } catch (createError) {
       toast.error(
         createError instanceof Error
@@ -208,7 +212,7 @@ export function GroupCollaborationPanel({
         { method: "DELETE" },
       );
       await loadGroupContent();
-      toast.success("Material removed.");
+      toast.success(t("Material removed."));
     } catch (deleteError) {
       toast.error(
         deleteError instanceof Error
@@ -260,7 +264,7 @@ export function GroupCollaborationPanel({
         },
       );
       setFocus(started);
-      toast.success("Shared focus session started.");
+      toast.success(t("Shared focus session started."));
     } catch (startError) {
       toast.error(
         startError instanceof Error
@@ -282,7 +286,7 @@ export function GroupCollaborationPanel({
         { method: "POST", body: "{}" },
       );
       setFocus(null);
-      toast.success("Focus session completed.");
+      toast.success(t("Focus session completed."));
     } catch (finishError) {
       toast.error(
         finishError instanceof Error
@@ -300,11 +304,11 @@ export function GroupCollaborationPanel({
     : 0;
 
   return (
-    <section className="mt-6 space-y-5" aria-label="Group study tools">
+    <section className="mt-6 space-y-5" aria-label={t("Group study tools")}>
       {error && (
         <p
           role="alert"
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive "
         >
           {error}
         </p>
@@ -312,13 +316,13 @@ export function GroupCollaborationPanel({
 
       <section className="surface p-5 sm:p-6">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <UsersRound size={19} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="font-semibold">Group task board</h2>
+            <h2 className="font-semibold">{t("Group task board")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Assign work, set a deadline, and keep each other updated.
+              {t("Assign work, set a deadline, and keep each other updated.")}
             </p>
           </div>
         </div>
@@ -328,24 +332,24 @@ export function GroupCollaborationPanel({
           className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
         >
           <label className="text-xs font-semibold sm:col-span-2 lg:col-span-2">
-            Task
+            {t("Task")}
             <input
               name="title"
               minLength={3}
               maxLength={120}
               required
-              placeholder="Prepare notes"
+              placeholder={t("Prepare notes")}
               className="field-control mt-1.5"
             />
           </label>
           <label className="text-xs font-semibold">
-            Assign to
+            {t("Assign to")}
             <select
               name="assigned_to"
               defaultValue=""
               className="field-control mt-1.5"
             >
-              <option value="">Unassigned</option>
+              <option value="">{t("Unassigned")}</option>
               {members.map((member) => (
                 <option key={member.student_id} value={member.student_id}>
                   {member.full_name}
@@ -354,7 +358,7 @@ export function GroupCollaborationPanel({
             </select>
           </label>
           <label className="text-xs font-semibold">
-            Due date
+            {t("Due date")}
             <input
               name="due_at"
               type="datetime-local"
@@ -364,17 +368,17 @@ export function GroupCollaborationPanel({
           <button
             type="submit"
             disabled={working === "task-create"}
-            className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             {working === "task-create" ? (
               <LoaderCircle size={16} className="animate-spin" />
             ) : (
               <Plus size={16} />
             )}
-            Add task
+            {t("Add task")}
           </button>
           <label className="text-xs font-semibold sm:col-span-2 lg:col-span-5">
-            Details
+            {t("Details")}
             <textarea
               name="description"
               maxLength={1000}
@@ -385,9 +389,9 @@ export function GroupCollaborationPanel({
         </form>
 
         {loading ? (
-          <div className="mt-5 h-24 animate-pulse rounded-xl bg-muted/60" />
+          <div className="mt-5 h-24 animate-pulse rounded-md bg-muted/60" />
         ) : tasks.length ? (
-          <ul className="mt-5 divide-y divide-border rounded-xl border border-border">
+          <ul className="mt-5 divide-y divide-border rounded-md border border-border">
             {tasks.map((task) => {
               const canManage =
                 task.created_by === currentUserId || ownerId === currentUserId;
@@ -407,7 +411,7 @@ export function GroupCollaborationPanel({
                       {task.due_at && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
                           <Clock3 size={12} aria-hidden="true" />
-                          {new Date(task.due_at).toLocaleString([], {
+                          {new Date(task.due_at).toLocaleString(intlLocale, {
                             month: "short",
                             day: "numeric",
                             hour: "numeric",
@@ -423,9 +427,9 @@ export function GroupCollaborationPanel({
                     )}
                     <p className="mt-2 text-xs text-muted-foreground">
                       {task.assignee_name
-                        ? `Assigned to ${task.assignee_name}`
-                        : "Unassigned"}{" "}
-                      · Added by {task.creator_name}
+                        ? t("Assigned to {name}", { name: task.assignee_name })
+                        : t("Unassigned")}{" "}
+                      · {t("Added by")} {task.creator_name}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -433,7 +437,7 @@ export function GroupCollaborationPanel({
                       className="sr-only"
                       htmlFor={`task-status-${task.id}`}
                     >
-                      Task status
+                      {t("Task status")}
                     </label>
                     <select
                       id={`task-status-${task.id}`}
@@ -447,17 +451,17 @@ export function GroupCollaborationPanel({
                       }
                       className="field-control h-9 min-w-32 py-1.5 text-xs"
                     >
-                      <option value="todo">To do</option>
-                      <option value="in_progress">In progress</option>
-                      <option value="done">Done</option>
+                      <option value="todo">{t("To do")}</option>
+                      <option value="in_progress">{t("In progress")}</option>
+                      <option value="done">{t("Done")}</option>
                     </select>
                     {canManage && (
                       <button
                         type="button"
                         disabled={working === task.id}
                         onClick={() => void deleteTask(task.id)}
-                        aria-label={`Delete ${task.title}`}
-                        className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/40"
+                        aria-label={t("Delete {title}", { title: task.title })}
+                        className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover: disabled:opacity-50 "
                       >
                         <Trash2 size={15} aria-hidden="true" />
                       </button>
@@ -468,8 +472,8 @@ export function GroupCollaborationPanel({
             })}
           </ul>
         ) : (
-          <p className="mt-5 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
-            No tasks yet. Add the first item for {groupName}.
+          <p className="mt-5 rounded-md bg-muted/50 p-4 text-sm text-muted-foreground">
+            {t("No tasks yet. Add the first item for")} {groupName}.
           </p>
         )}
       </section>
@@ -477,13 +481,13 @@ export function GroupCollaborationPanel({
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="surface p-5 sm:p-6">
           <div className="flex items-start gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-200">
+            <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
               <BookOpenText size={19} aria-hidden="true" />
             </span>
             <div>
-              <h2 className="font-semibold">Shared materials</h2>
+              <h2 className="font-semibold">{t("Shared materials")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Add class notes, links, and files up to 5 MB.
+                {t("Add class notes, links, and files up to 5 MB.")}
               </p>
             </div>
           </div>
@@ -492,28 +496,30 @@ export function GroupCollaborationPanel({
             className="mt-5 grid gap-3 sm:grid-cols-2"
           >
             <label className="text-xs font-semibold sm:col-span-2">
-              Title
+              {t("Title")}
               <input
                 name="title"
                 minLength={2}
                 maxLength={120}
                 required
                 className="field-control mt-1.5"
-                placeholder="Week 4 lecture notes"
+                placeholder={t("Week 4 lecture notes")}
               />
             </label>
             <label className="text-xs font-semibold sm:col-span-2">
-              Note
+              {t("Note")}
               <textarea
                 name="description"
                 maxLength={1000}
                 rows={2}
                 className="field-control mt-1.5 resize-y"
-                placeholder="What should the group know about this material?"
+                placeholder={t(
+                  "What should the group know about this material?",
+                )}
               />
             </label>
             <label className="text-xs font-semibold">
-              Link
+              {t("Link")}
               <input
                 name="source_url"
                 type="url"
@@ -523,7 +529,7 @@ export function GroupCollaborationPanel({
               />
             </label>
             <label className="text-xs font-semibold">
-              Or attach a file
+              {t("Or attach a file")}
               <input
                 name="file"
                 type="file"
@@ -534,14 +540,14 @@ export function GroupCollaborationPanel({
             <button
               type="submit"
               disabled={working === "material-create"}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted disabled:opacity-50 sm:col-span-2"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border px-4 text-sm font-semibold hover:bg-muted disabled:opacity-50 sm:col-span-2"
             >
               {working === "material-create" ? (
                 <LoaderCircle size={15} className="animate-spin" />
               ) : (
                 <Plus size={15} />
               )}
-              Add shared material
+              {t("Add shared material")}
             </button>
           </form>
           <ul className="mt-5 space-y-2">
@@ -552,9 +558,9 @@ export function GroupCollaborationPanel({
               return (
                 <li
                   key={material.id}
-                  className="flex items-start gap-3 rounded-xl bg-muted/50 p-3"
+                  className="flex items-start gap-3 rounded-md bg-muted/50 p-3"
                 >
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-indigo-600 dark:text-indigo-300">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-primary ">
                     {material.has_file ? (
                       <FileText size={17} aria-hidden="true" />
                     ) : (
@@ -571,16 +577,16 @@ export function GroupCollaborationPanel({
                       </p>
                     )}
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Added by {material.creator_name}
+                      {t("Added by")} {material.creator_name}
                     </p>
                     {material.source_url && (
                       <a
                         href={material.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-1 inline-block break-all text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                        className="mt-1 inline-block break-all text-xs font-medium text-primary hover:underline "
                       >
-                        Open link
+                        {t("Open link")}
                       </a>
                     )}
                     {material.has_file && (
@@ -594,7 +600,9 @@ export function GroupCollaborationPanel({
                       type="button"
                       disabled={working === material.id}
                       onClick={() => void downloadMaterial(material)}
-                      aria-label={`Download ${material.title}`}
+                      aria-label={t("Download {title}", {
+                        title: material.title,
+                      })}
                       className="grid size-9 shrink-0 place-items-center rounded-lg hover:bg-card disabled:opacity-50"
                     >
                       <Download size={15} aria-hidden="true" />
@@ -605,8 +613,10 @@ export function GroupCollaborationPanel({
                       type="button"
                       disabled={working === material.id}
                       onClick={() => void deleteMaterial(material.id)}
-                      aria-label={`Delete ${material.title}`}
-                      className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/40"
+                      aria-label={t("Delete {title}", {
+                        title: material.title,
+                      })}
+                      className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover: disabled:opacity-50 "
                     >
                       <Trash2 size={15} aria-hidden="true" />
                     </button>
@@ -617,40 +627,44 @@ export function GroupCollaborationPanel({
           </ul>
           {!loading && materials.length === 0 && (
             <p className="mt-4 text-sm text-muted-foreground">
-              No shared materials yet.
+              {t("No shared materials yet.")}
             </p>
           )}
         </section>
 
         <section className="surface flex flex-col items-center p-5 text-center sm:p-6">
-          <span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <CircleDashed size={19} aria-hidden="true" />
           </span>
-          <h2 className="mt-3 font-semibold">Shared Pomodoro</h2>
+          <h2 className="mt-3 font-semibold">{t("Shared Pomodoro")}</h2>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Everyone sees the same focus session and its end time.
+            {t("Everyone sees the same focus session and its end time.")}
           </p>
           {focus ? (
             <>
               <p
-                className="mt-5 font-mono text-5xl font-semibold tabular-nums tracking-tight text-indigo-700 dark:text-indigo-300"
+                className="mt-5 font-mono text-5xl font-semibold tabular-nums tracking-tight text-accent-foreground "
                 aria-live="off"
               >
                 {formatRemaining(focusSeconds)}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {focusSeconds > 0
-                  ? `Started by ${focus.started_by_name ?? "a group member"} · ${focus.focus_minutes} minute focus`
-                  : "Finishing this session…"}
+                  ? t("Started by {name} · {count} minute focus", {
+                      name: focus.started_by_name ?? t("a group member"),
+                      count: focus.focus_minutes,
+                    })
+                  : t("Finishing this session…")}
               </p>
               {focus.started_by === currentUserId && (
                 <button
                   type="button"
                   onClick={() => void finishFocus()}
                   disabled={working === "focus-finish"}
-                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted disabled:opacity-50"
+                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-md border border-border px-4 text-sm font-semibold hover:bg-muted disabled:opacity-50"
                 >
-                  <Check size={15} aria-hidden="true" /> End focus session
+                  <Check size={15} aria-hidden="true" />{" "}
+                  {t("End focus session")}
                 </button>
               )}
             </>
@@ -660,7 +674,7 @@ export function GroupCollaborationPanel({
               className="mt-5 grid w-full max-w-xs gap-3 text-left"
             >
               <label className="text-xs font-semibold">
-                Focus length
+                {t("Focus length")}
                 <select
                   name="focus_minutes"
                   defaultValue="25"
@@ -668,13 +682,13 @@ export function GroupCollaborationPanel({
                 >
                   {[15, 20, 25, 30, 45, 50, 60, 90, 120].map((minutes) => (
                     <option key={minutes} value={minutes}>
-                      {minutes} minutes
+                      {t("{count} minutes", { count: minutes })}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="text-xs font-semibold">
-                Break
+                {t("Break")}
                 <select
                   name="break_minutes"
                   defaultValue="5"
@@ -682,7 +696,7 @@ export function GroupCollaborationPanel({
                 >
                   {[1, 3, 5, 10, 15, 20, 30].map((minutes) => (
                     <option key={minutes} value={minutes}>
-                      {minutes} minutes
+                      {t("{count} minutes", { count: minutes })}
                     </option>
                   ))}
                 </select>
@@ -690,20 +704,20 @@ export function GroupCollaborationPanel({
               <button
                 type="submit"
                 disabled={working === "focus-start"}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
               >
                 {working === "focus-start" ? (
                   <LoaderCircle size={15} className="animate-spin" />
                 ) : (
                   <Play size={15} />
                 )}
-                Start together
+                {t("Start together")}
               </button>
             </form>
           )}
           <p className="mt-auto inline-flex items-center gap-1.5 pt-5 text-[11px] text-muted-foreground">
-            <Check size={12} aria-hidden="true" /> Group members can join at any
-            time
+            <Check size={12} aria-hidden="true" />{" "}
+            {t("Group members can join at any time")}
           </p>
         </section>
       </div>
