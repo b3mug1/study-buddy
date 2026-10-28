@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
@@ -12,8 +13,8 @@ import {
   Mail,
   User,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/navigation/link";
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -90,16 +91,20 @@ function StatusAlert({
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-sm transition-all ${
+      className={`flex items-start gap-2.5 rounded-md border p-3.5 text-sm transition-all ${
         tone === "error"
           ? "border-destructive/30 bg-destructive/10 text-destructive dark:bg-destructive/15"
-          : "border-emerald-500/30 bg-emerald-50/80 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+          : "border-success/30 bg-success/10 text-success"
       }`}
     >
       {tone === "error" ? (
         <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
       ) : (
-        <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <CheckCircle2
+          size={18}
+          className="mt-0.5 shrink-0"
+          aria-hidden="true"
+        />
       )}
       <div className="leading-snug">{children}</div>
     </div>
@@ -107,8 +112,9 @@ function StatusAlert({
 }
 
 function FormTabSwitcher({ active }: { active: "login" | "register" }) {
+  const { t } = useI18n();
   return (
-    <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+    <div className="mb-6 grid grid-cols-2 gap-1 rounded-md bg-muted p-1">
       <Link
         href="/login"
         className={`rounded-lg py-2 text-center text-xs font-semibold transition-all ${
@@ -117,7 +123,7 @@ function FormTabSwitcher({ active }: { active: "login" | "register" }) {
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        Sign In
+        {t("Sign In")}
       </Link>
       <Link
         href="/register"
@@ -127,7 +133,7 @@ function FormTabSwitcher({ active }: { active: "login" | "register" }) {
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        Create Account
+        {t("Create Account")}
       </Link>
     </div>
   );
@@ -140,7 +146,8 @@ export function LoginForm({
   resetSuccess?: boolean;
   authError?: string;
 }) {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -168,8 +175,7 @@ export function LoginForm({
       });
       return;
     }
-    router.replace("/dashboard");
-    router.refresh();
+    navigate("/dashboard", { replace: true });
   });
 
   return (
@@ -177,12 +183,15 @@ export function LoginForm({
       <FormTabSwitcher active="login" />
       <form onSubmit={submit} className="space-y-4" noValidate>
         {message && (
-          <StatusAlert tone={message.tone}>{message.text}</StatusAlert>
+          <StatusAlert tone={message.tone}>{t(message.text)}</StatusAlert>
         )}
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            University email
+          <label
+            htmlFor="email"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t("University email")}
           </label>
           <div className="relative">
             <Mail
@@ -195,21 +204,24 @@ export function LoginForm({
               type="email"
               autoComplete="email"
               placeholder="123456@astanait.edu.kz"
-              className="field-control pl-10"
+              className="field-control field-control--leading-icon"
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
             />
           </div>
           {form.formState.errors.email && (
             <p className="text-xs text-destructive">
-              {form.formState.errors.email.message}
+              {t(form.formState.errors.email.message ?? "")}
             </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Password
+          <label
+            htmlFor="password"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t("Password")}
           </label>
           <div className="relative">
             <Lock
@@ -221,8 +233,8 @@ export function LoginForm({
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Enter your password"
-              className="field-control pl-10 pr-10"
+              placeholder={t("Enter your password")}
+              className="field-control field-control--leading-icon field-control--trailing-icon"
               aria-invalid={Boolean(form.formState.errors.password)}
               {...form.register("password")}
             />
@@ -230,14 +242,16 @@ export function LoginForm({
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showPassword ? t("Hide password") : t("Show password")
+              }
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {form.formState.errors.password && (
             <p className="text-xs text-destructive">
-              {form.formState.errors.password.message}
+              {t(form.formState.errors.password.message ?? "")}
             </p>
           )}
         </div>
@@ -245,13 +259,17 @@ export function LoginForm({
         <button
           type="submit"
           disabled={form.formState.isSubmitting}
-          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
+          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:opacity-80 disabled:pointer-events-none disabled:opacity-50"
         >
           {form.formState.isSubmitting ? (
-            <LoaderCircle className="animate-spin" size={18} aria-hidden="true" />
+            <LoaderCircle
+              className="animate-spin"
+              size={18}
+              aria-hidden="true"
+            />
           ) : (
             <>
-              Sign In
+              {t("Sign In")}
               <ArrowRight size={17} aria-hidden="true" />
             </>
           )}
@@ -262,7 +280,8 @@ export function LoginForm({
 }
 
 export function RegisterForm() {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -280,8 +299,7 @@ export function RegisterForm() {
         email,
         password,
       });
-      router.replace("/onboarding");
-      router.refresh();
+      navigate("/onboarding", { replace: true });
     } catch (error) {
       setMessage({
         text:
@@ -298,12 +316,15 @@ export function RegisterForm() {
       <FormTabSwitcher active="register" />
       <form onSubmit={submit} className="space-y-4" noValidate>
         {message && (
-          <StatusAlert tone={message.tone}>{message.text}</StatusAlert>
+          <StatusAlert tone={message.tone}>{t(message.text)}</StatusAlert>
         )}
 
         <div className="space-y-1.5">
-          <label htmlFor="fullName" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Full name
+          <label
+            htmlFor="fullName"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t("Full name")}
           </label>
           <div className="relative">
             <User
@@ -314,22 +335,25 @@ export function RegisterForm() {
             <input
               id="fullName"
               autoComplete="name"
-              placeholder="e.g. Bekzat Murat"
-              className="field-control pl-10"
+              placeholder={t("e.g. Bekzat Murat")}
+              className="field-control field-control--leading-icon"
               aria-invalid={Boolean(form.formState.errors.fullName)}
               {...form.register("fullName")}
             />
           </div>
           {form.formState.errors.fullName && (
             <p className="text-xs text-destructive">
-              {form.formState.errors.fullName.message}
+              {t(form.formState.errors.fullName.message ?? "")}
             </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="reg-email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            University email
+          <label
+            htmlFor="reg-email"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t("University email")}
           </label>
           <div className="relative">
             <Mail
@@ -342,21 +366,24 @@ export function RegisterForm() {
               type="email"
               autoComplete="email"
               placeholder="123456@astanait.edu.kz"
-              className="field-control pl-10"
+              className="field-control field-control--leading-icon"
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
             />
           </div>
           {form.formState.errors.email && (
             <p className="text-xs text-destructive">
-              {form.formState.errors.email.message}
+              {t(form.formState.errors.email.message ?? "")}
             </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="reg-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Password
+          <label
+            htmlFor="reg-password"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {t("Password")}
           </label>
           <div className="relative">
             <Lock
@@ -368,8 +395,8 @@ export function RegisterForm() {
               id="reg-password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              placeholder="At least 8 characters"
-              className="field-control pl-10 pr-10"
+              placeholder={t("At least 8 characters")}
+              className="field-control field-control--leading-icon field-control--trailing-icon"
               aria-invalid={Boolean(form.formState.errors.password)}
               {...form.register("password")}
             />
@@ -377,14 +404,16 @@ export function RegisterForm() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showPassword ? t("Hide password") : t("Show password")
+              }
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {form.formState.errors.password && (
             <p className="text-xs text-destructive">
-              {form.formState.errors.password.message}
+              {t(form.formState.errors.password.message ?? "")}
             </p>
           )}
         </div>
@@ -392,13 +421,17 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={form.formState.isSubmitting}
-          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
+          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:opacity-80 disabled:pointer-events-none disabled:opacity-50"
         >
           {form.formState.isSubmitting ? (
-            <LoaderCircle className="animate-spin" size={18} aria-hidden="true" />
+            <LoaderCircle
+              className="animate-spin"
+              size={18}
+              aria-hidden="true"
+            />
           ) : (
             <>
-              Create Account
+              {t("Create Account")}
               <ArrowRight size={17} aria-hidden="true" />
             </>
           )}
@@ -409,7 +442,8 @@ export function RegisterForm() {
 }
 
 export function ResetPasswordForm({ token }: { token: string }) {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const form = useForm<PasswordValues>({
@@ -428,14 +462,17 @@ export function ResetPasswordForm({ token }: { token: string }) {
       );
       return;
     }
-    router.replace("/login?reset=success");
+    navigate("/login?reset=success", { replace: true });
   });
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      {message && <StatusAlert tone="error">{message}</StatusAlert>}
+      {message && <StatusAlert tone="error">{t(message)}</StatusAlert>}
       <div className="space-y-1.5">
-        <label htmlFor="new-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <label
+          htmlFor="new-password"
+          className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        >
           New password
         </label>
         <div className="relative">
@@ -448,8 +485,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
             id="new-password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="At least 8 characters"
-            className="field-control pl-10 pr-10"
+            placeholder={t("At least 8 characters")}
+            className="field-control field-control--leading-icon field-control--trailing-icon"
             aria-invalid={Boolean(form.formState.errors.password)}
             {...form.register("password")}
           />
@@ -457,21 +494,24 @@ export function ResetPasswordForm({ token }: { token: string }) {
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? t("Hide password") : t("Show password")}
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
         {form.formState.errors.password && (
           <p className="text-xs text-destructive">
-            {form.formState.errors.password.message}
+            {t(form.formState.errors.password.message ?? "")}
           </p>
         )}
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="confirmPassword" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Confirm password
+        <label
+          htmlFor="confirmPassword"
+          className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        >
+          {t("Confirm password")}
         </label>
         <div className="relative">
           <Lock
@@ -483,15 +523,15 @@ export function ResetPasswordForm({ token }: { token: string }) {
             id="confirmPassword"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Repeat your new password"
-            className="field-control pl-10"
+            placeholder={t("Repeat your new password")}
+            className="field-control field-control--leading-icon"
             aria-invalid={Boolean(form.formState.errors.confirmPassword)}
             {...form.register("confirmPassword")}
           />
         </div>
         {form.formState.errors.confirmPassword && (
           <p className="text-xs text-destructive">
-            {form.formState.errors.confirmPassword.message}
+            {t(form.formState.errors.confirmPassword.message ?? "")}
           </p>
         )}
       </div>
@@ -499,7 +539,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={form.formState.isSubmitting}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:opacity-80 disabled:pointer-events-none disabled:opacity-50"
       >
         {form.formState.isSubmitting ? (
           <LoaderCircle className="animate-spin" size={18} aria-hidden="true" />
@@ -512,7 +552,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
 }
 
 export function VerifyEmailForm({ token }: { token: string }) {
-  const router = useRouter();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -532,11 +573,12 @@ export function VerifyEmailForm({ token }: { token: string }) {
         tone: "success",
       });
       setTimeout(() => {
-        router.replace("/onboarding");
+        navigate("/onboarding", { replace: true });
       }, 1000);
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : "Unable to verify email.",
+        text:
+          error instanceof Error ? error.message : "Unable to verify email.",
         tone: "error",
       });
       setBusy(false);
@@ -545,24 +587,32 @@ export function VerifyEmailForm({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {message && <StatusAlert tone={message.tone}>{message.text}</StatusAlert>}
+      {message && (
+        <StatusAlert tone={message.tone}>{t(message.text)}</StatusAlert>
+      )}
       <p className="text-sm text-muted-foreground">
-        Click below to complete email verification.
+        {t("Click below to complete email verification.")}
       </p>
       <button
         type="button"
         disabled={busy}
         onClick={handleVerify}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:opacity-80 disabled:opacity-50"
       >
-        {busy ? <LoaderCircle className="animate-spin" size={18} /> : "Confirm Email"}
+        {busy ? (
+          <LoaderCircle className="animate-spin" size={18} />
+        ) : (
+          "Confirm Email"
+        )}
       </button>
       <div className="text-center">
-        <Link href="/login" className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
-          Return to login
+        <Link
+          href="/login"
+          className="text-xs font-semibold text-primary hover:underline"
+        >
+          {t("Return to login")}
         </Link>
       </div>
     </div>
   );
 }
-
