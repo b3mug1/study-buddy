@@ -132,6 +132,10 @@ export type Conversation = {
   id: string;
   kind: "direct" | "group";
   group_id: string | null;
+  connection_id: string | null;
+  communication_status: "pending" | "accepted" | "declined" | null;
+  request_direction: "incoming" | "outgoing" | null;
+  intro_messages_remaining: number | null;
   title: string;
   other_members: string[];
   last_message: string | null;
@@ -146,6 +150,8 @@ export type ChatMessage = {
   author_name: string;
   body: string;
   created_at: string;
+  communication_status?: "pending" | "accepted" | "declined" | null;
+  intro_messages_remaining?: number | null;
 };
 
 export type Notification = {

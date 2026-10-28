@@ -1,6 +1,17 @@
 "use client";
 
+import type { StudentProfile } from "@/lib/api-types";
 import type { ValidProfile } from "@/lib/schemas/profile";
+
+export class ApiRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
 
 function getApiErrorMessage(payload: unknown) {
   if (typeof payload === "object" && payload !== null && "detail" in payload) {
@@ -48,7 +59,7 @@ export async function authenticatedApiRequest(
     } catch (error) {
       if (!(error instanceof SyntaxError)) throw error;
     }
-    throw new Error(getApiErrorMessage(payload));
+    throw new ApiRequestError(response.status, getApiErrorMessage(payload));
   }
   return response;
 }
@@ -66,7 +77,9 @@ export async function authenticatedApiJson<T>(
   return (await response.json()) as T;
 }
 
-export async function saveStudentProfile(values: ValidProfile): Promise<void> {
+export async function saveStudentProfile(
+  values: ValidProfile,
+): Promise<StudentProfile> {
   await authenticatedApiRequest("profile", {
     method: "PUT",
     body: JSON.stringify({
@@ -85,4 +98,5 @@ export async function saveStudentProfile(values: ValidProfile): Promise<void> {
       show_in_discovery: values.showInDiscovery,
     }),
   });
+  return authenticatedApiJson<StudentProfile>("profile");
 }
