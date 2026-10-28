@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import {
   BookOpenCheck,
   CalendarDays,
@@ -32,6 +33,9 @@ type ProgressData = {
 };
 
 export function ProgressPage() {
+  const { t, locale } = useI18n();
+  const intlLocale =
+    locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
   const [goals, setGoals] = useState<StudyGoal[]>([]);
   const [progress, setProgress] = useState<ProgressData>();
   const [loading, setLoading] = useState(true);
@@ -77,7 +81,7 @@ export function ProgressPage() {
         }),
       });
       form.reset();
-      toast.success("Study goal added.");
+      toast.success(t("Study goal added."));
       await load();
     } catch (saveError) {
       toast.error(
@@ -94,7 +98,7 @@ export function ProgressPage() {
     try {
       await authenticatedApiRequest(`goals/${goalId}`, { method: "DELETE" });
       setGoals((current) => current.filter((goal) => goal.id !== goalId));
-      toast.success("Study goal removed.");
+      toast.success(t("Study goal removed."));
     } catch (deleteError) {
       toast.error(
         deleteError instanceof Error
@@ -106,31 +110,32 @@ export function ProgressPage() {
 
   const summary = progress?.summary;
   const weekLabel = summary?.week_starts_at
-    ? new Date(summary.week_starts_at).toLocaleDateString([], {
+    ? new Date(summary.week_starts_at).toLocaleDateString(intlLocale, {
         month: "long",
         day: "numeric",
       })
-    : "This week";
+    : t("This week");
 
   return (
     <main className="mx-auto max-w-5xl">
       <div>
-        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-          Keep your momentum
+        <p className="text-sm font-semibold text-primary">
+          {t("Keep your momentum")}
         </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Study progress
+          {t("Study progress")}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Set a weekly goal for each subject and see your completed study
-          sessions.
+          {t(
+            "Set a weekly goal for each subject and see your completed study sessions.",
+          )}
         </p>
       </div>
 
       {error && (
         <p
           role="alert"
-          className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          className="mt-5 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive "
         >
           {error}
         </p>
@@ -138,64 +143,64 @@ export function ProgressPage() {
 
       <section
         className="mt-6 grid gap-4 sm:grid-cols-3"
-        aria-label="Weekly summary"
+        aria-label={t("Weekly summary")}
       >
         <article className="surface p-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <BookOpenCheck size={18} aria-hidden="true" />
           </span>
           <p className="mt-4 text-sm text-muted-foreground">
-            Completed sessions
+            {t("Completed sessions")}
           </p>
           <p className="mt-1 text-3xl font-semibold">
             {summary?.completed_sessions ?? "—"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Since {weekLabel}
+            {t("Since")} {weekLabel}
           </p>
         </article>
         <article className="surface p-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <Clock3 size={18} aria-hidden="true" />
           </span>
-          <p className="mt-4 text-sm text-muted-foreground">Study time</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {t("Study time")}
+          </p>
           <p className="mt-1 text-3xl font-semibold">
             {summary ? Math.floor(summary.study_minutes / 60) : "—"}
             <span className="ml-1 text-base font-medium text-muted-foreground">
-              h
+              {t("hours short")}
             </span>{" "}
             {summary ? summary.study_minutes % 60 : ""}
             <span className="ml-1 text-base font-medium text-muted-foreground">
-              min
+              {t("minutes short")}
             </span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            From completed sessions
+            {t("From completed sessions")}
           </p>
         </article>
         <article className="surface p-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+          <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
             <Target size={18} aria-hidden="true" />
           </span>
           <p className="mt-4 text-sm text-muted-foreground">
-            Active subject goals
+            {t("Active subject goals")}
           </p>
           <p className="mt-1 text-3xl font-semibold">{goals.length}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Track them below</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("Track them below")}
+          </p>
         </article>
       </section>
 
       <section className="surface mt-5 p-5 sm:p-6">
         <div className="flex items-center gap-3">
-          <CalendarDays
-            size={19}
-            className="text-indigo-600 dark:text-indigo-400"
-            aria-hidden="true"
-          />
+          <CalendarDays size={19} className="text-primary" aria-hidden="true" />
           <div>
-            <h2 className="font-semibold">Goals by subject</h2>
+            <h2 className="font-semibold">{t("Goals by subject")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Choose how many sessions to complete this week.
+              {t("Choose how many sessions to complete this week.")}
             </p>
           </div>
         </div>
@@ -205,18 +210,18 @@ export function ProgressPage() {
           className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_1fr_auto]"
         >
           <label className="text-xs font-semibold">
-            Subject
+            {t("Subject")}
             <input
               name="subject"
               minLength={1}
               maxLength={80}
               required
               className="field-control mt-1.5"
-              placeholder="Calculus"
+              placeholder={t("Calculus")}
             />
           </label>
           <label className="text-xs font-semibold">
-            Sessions this week
+            {t("Sessions this week")}
             <input
               name="target_sessions"
               type="number"
@@ -228,7 +233,7 @@ export function ProgressPage() {
             />
           </label>
           <label className="text-xs font-semibold">
-            Target date (optional)
+            {t("Target date (optional)")}
             <input
               name="target_date"
               type="date"
@@ -238,19 +243,19 @@ export function ProgressPage() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             {saving ? (
               <LoaderCircle size={15} className="animate-spin" />
             ) : (
               <Plus size={15} />
             )}
-            Add goal
+            {t("Add goal")}
           </button>
         </form>
 
         {loading ? (
-          <div className="mt-5 h-28 animate-pulse rounded-xl bg-muted/60" />
+          <div className="mt-5 h-28 animate-pulse rounded-md bg-muted/60" />
         ) : goals.length ? (
           <ul className="mt-5 space-y-3">
             {goals.map((goal) => {
@@ -262,14 +267,14 @@ export function ProgressPage() {
               return (
                 <li
                   key={goal.id}
-                  className="rounded-xl border border-border p-4"
+                  className="rounded-md border border-border p-4"
                 >
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <h3 className="font-semibold">{goal.subject}</h3>
                         <span className="text-xs font-medium text-muted-foreground">
-                          {done} / {goal.target_sessions} sessions
+                          {done} / {goal.target_sessions} {t("sessions")}
                         </span>
                       </div>
                       <div
@@ -278,19 +283,21 @@ export function ProgressPage() {
                         aria-valuenow={percent}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-label={`${goal.subject} weekly progress`}
+                        aria-label={t("{subject} weekly progress", {
+                          subject: goal.subject,
+                        })}
                       >
                         <div
-                          className="h-full rounded-full bg-indigo-600 transition-all"
+                          className="h-full rounded-full bg-primary transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
                       {goal.target_date && (
                         <p className="mt-2 text-xs text-muted-foreground">
-                          Target date:{" "}
+                          {t("Target date:")}{" "}
                           {new Date(
                             `${goal.target_date}T12:00:00`,
-                          ).toLocaleDateString()}
+                          ).toLocaleDateString(intlLocale)}
                         </p>
                       )}
                       <GoalTopicChecklist
@@ -302,8 +309,10 @@ export function ProgressPage() {
                     <button
                       type="button"
                       onClick={() => void deleteGoal(goal.id)}
-                      aria-label={`Remove ${goal.subject} goal`}
-                      className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40"
+                      aria-label={t("Remove goal: {subject}", {
+                        subject: goal.subject,
+                      })}
+                      className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover: "
                     >
                       <Trash2 size={15} aria-hidden="true" />
                     </button>
@@ -313,14 +322,14 @@ export function ProgressPage() {
             })}
           </ul>
         ) : (
-          <div className="mt-5 rounded-xl bg-muted/40 px-4 py-6 text-sm text-muted-foreground">
-            No goals set. Add a subject above to start your weekly plan.
+          <div className="mt-5 rounded-md bg-muted/40 px-4 py-6 text-sm text-muted-foreground">
+            {t("No goals set. Add a subject above to start your weekly plan.")}
           </div>
         )}
       </section>
 
       <section className="mt-6">
-        <h2 className="font-semibold">Completed this week by subject</h2>
+        <h2 className="font-semibold">{t("Completed this week by subject")}</h2>
         <div className="surface mt-3 p-4">
           {progress?.subjects.length ? (
             <ul className="divide-y divide-border">
@@ -331,15 +340,15 @@ export function ProgressPage() {
                 >
                   <span className="font-medium">{item.subject}</span>
                   <span className="text-right text-sm text-muted-foreground">
-                    {item.completed_sessions} sessions · {item.study_minutes}{" "}
-                    min
+                    {item.completed_sessions} {t("sessions")} ·{" "}
+                    {t("{count} minutes", { count: item.study_minutes })}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="py-2 text-sm text-muted-foreground">
-              Completed sessions will be counted here.
+              {t("Completed sessions will be counted here.")}
             </p>
           )}
         </div>
@@ -357,6 +366,7 @@ function GoalTopicChecklist({
   topics: StudyGoalTopic[];
   onChanged: () => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
 
   async function addTopic(event: React.FormEvent<HTMLFormElement>) {
@@ -415,7 +425,7 @@ function GoalTopicChecklist({
 
   return (
     <div className="mt-4 border-t border-border pt-3">
-      <p className="text-xs font-semibold">Topics to complete</p>
+      <p className="text-xs font-semibold">{t("Topics to complete")}</p>
       {topics.length > 0 && (
         <ul className="mt-2 space-y-1">
           {topics.map((topic) => (
@@ -426,7 +436,7 @@ function GoalTopicChecklist({
                   checked={topic.completed}
                   disabled={saving}
                   onChange={() => void toggleTopic(topic)}
-                  className="size-4 accent-indigo-600"
+                  className="size-4 "
                 />
                 <span
                   className={
@@ -440,8 +450,8 @@ function GoalTopicChecklist({
                 {topic.completed && (
                   <Check
                     size={13}
-                    className="shrink-0 text-emerald-600"
-                    aria-label="Completed"
+                    className="shrink-0 text-primary"
+                    aria-label={t("Completed")}
                   />
                 )}
               </label>
@@ -449,8 +459,8 @@ function GoalTopicChecklist({
                 type="button"
                 disabled={saving}
                 onClick={() => void deleteTopic(topic.id)}
-                aria-label={`Remove topic ${topic.topic}`}
-                className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:hover:bg-red-950/40"
+                aria-label={t("Remove topic {topic}", { topic: topic.topic })}
+                className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-destructive/10 hover: disabled:opacity-50 "
               >
                 <Trash2 size={13} aria-hidden="true" />
               </button>
@@ -463,7 +473,7 @@ function GoalTopicChecklist({
         className="mt-2 flex gap-2"
       >
         <label className="sr-only" htmlFor={`topic-${goalId}`}>
-          Add a study topic
+          {t("Add a study topic")}
         </label>
         <input
           id={`topic-${goalId}`}
@@ -471,15 +481,15 @@ function GoalTopicChecklist({
           minLength={2}
           maxLength={160}
           required
-          placeholder="Add a topic to study"
+          placeholder={t("Add a topic to study")}
           className="field-control h-9 text-xs"
         />
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+          className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md border border-border px-3 text-xs font-semibold hover:bg-muted disabled:opacity-50"
         >
-          <Plus size={13} aria-hidden="true" /> Topic
+          <Plus size={13} aria-hidden="true" /> {t("Topic")}
         </button>
       </form>
     </div>
