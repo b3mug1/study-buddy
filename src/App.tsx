@@ -12,6 +12,8 @@ import {
 import { Toaster } from "sonner";
 import { AppLayout } from "@/components/app/app-layout";
 import { RevealController } from "@/components/motion/reveal-controller";
+import { SmoothScroll } from "@/components/motion/smooth-scroll";
+import { SplashScreen } from "@/components/motion/splash-screen";
 import type { ProfileFormValues } from "@/lib/schemas/profile";
 import { ApiRequestError, authenticatedApiJson } from "@/lib/api-client";
 import type { StudentProfile } from "@/lib/api-types";
@@ -395,6 +397,8 @@ function NotFoundRoute() {
 export function App() {
   return (
     <BrowserRouter>
+      <SplashScreen />
+      <SmoothScroll />
       <RouteTitle />
       <RevealController />
       <Suspense fallback={<RouteLoading />}>
