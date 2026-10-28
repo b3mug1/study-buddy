@@ -1,6 +1,6 @@
 import pytest
 
-from app.database import DatabaseError, PostgresDatabase, _policy
+from app.database import DatabaseError, PostgresDatabase
 
 
 def test_table_names_and_columns_are_allowlisted() -> None:
@@ -23,17 +23,13 @@ def test_discovery_and_message_queries_apply_user_access_predicates() -> None:
     assert "show_in_discovery" in profile_sql
     assert "connections" in profile_sql
     assert "group_members" in profile_sql
-    assert len(profile_params) == 5
+    assert len(profile_params) == 7
     assert "conversation_members" in message_sql
     assert "author_id = %s" in message_sql
-    assert message_params == [
-        "00000000-0000-0000-0000-000000000001",
-        "00000000-0000-0000-0000-000000000001",
-        "message-id",
-    ]
+    assert message_params == [database.user_id] * 5 + ["message-id"]
 
 
-def test_message_insert_is_scoped_to_authenticated_author_and_membership() -> None:
+def test_direct_message_insert_is_rejected_in_favor_of_guarded_rpc() -> None:
     database = PostgresDatabase("00000000-0000-0000-0000-000000000001")
     query = database.table("messages").insert(
         {
@@ -43,9 +39,5 @@ def test_message_insert_is_scoped_to_authenticated_author_and_membership() -> No
         }
     )
 
-    query._validate_insert_access()
-    policy, params = _policy("messages", "insert", database.user_id)
-
-    assert "author_id = %s" in policy
-    assert "conversation_members" in policy
-    assert params == [database.user_id, database.user_id]
+    with pytest.raises(DatabaseError, match="guarded conversation send operation"):
+        query._validate_insert_access()
