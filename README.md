@@ -2,13 +2,13 @@
 
 **Find your people. Study smarter.**
 
-Study Buddy is a university collaboration app built with a React/Next.js frontend, a Python FastAPI backend, and self-managed PostgreSQL. Authentication, profiles, study groups, connections, messages, notifications, and sessions are stored in PostgreSQL.
+Study Buddy is a university collaboration app built with a React and Vite frontend, a Python FastAPI backend, and self-managed PostgreSQL. Authentication, profiles, study groups, connections, messages, notifications, and sessions are stored in PostgreSQL.
 
 ## Architecture
 
 ```text
-Browser (React / Next.js)
-  ├── same-origin API proxy + HttpOnly access/refresh cookies
+Browser (React / React Router / Vite)
+  ├── same-origin Express API proxy + HttpOnly access/refresh cookies
   └── one-time WebSocket tickets for live message events
         ↓
 Python FastAPI
@@ -20,13 +20,13 @@ Python FastAPI
 Private PostgreSQL database
 ```
 
-Passwords are hashed with Argon2. JWTs are signed with `JWT_SECRET_KEY`; the browser never reads them because Next.js stores them in `HttpOnly`, `SameSite=Lax` cookies. The Next.js server forwards the access token to FastAPI. Refresh tokens are stored as SHA-256 hashes in PostgreSQL and can be revoked on logout or password reset.
+Passwords are hashed with Argon2. JWTs are signed with `JWT_SECRET_KEY`; the browser never reads them because the Express API proxy stores them in `HttpOnly`, `SameSite=Lax` cookies. The proxy forwards the access token to FastAPI. Refresh tokens are stored as SHA-256 hashes in PostgreSQL and can be revoked on logout or password reset.
 
 All database access is through the FastAPI service. Database values are parameterized, database identifiers are allowlisted, and the query layer adds per-user authorization predicates. Keep PostgreSQL private (not reachable from browsers or the public internet), use a dedicated application database account, require TLS for remote connections, and never expose `DATABASE_URL` to the frontend. PostgreSQL RLS is not enabled: authorization is enforced in the backend, so do not add another path that lets untrusted clients connect directly to the database.
 
 ## Database model and migrations
 
-[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks.
+[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks. [`migrations/003_intro_message_limits.sql`](./migrations/003_intro_message_limits.sql) adds the counter used to enforce the three-message chat-request limit.
 
 Apply the migration once to an empty PostgreSQL database:
 
@@ -34,15 +34,20 @@ Apply the migration once to an empty PostgreSQL database:
 $env:DATABASE_URL = "postgresql://study_buddy:your-password@localhost:5432/study_buddy"
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\001_initial.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\002_collaboration_features.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\003_intro_message_limits.sql
 ```
 
-If the database already has migration `001`, apply only `002_collaboration_features.sql` once.
+If the database already exists, apply each migration it is missing in numerical order, once. Existing PostgreSQL Docker volumes do not rerun `/docker-entrypoint-initdb.d` scripts automatically. For the Compose database, for example:
+
+```powershell
+docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/003_intro_message_limits.sql
+```
 
 For production, run migrations with a migration/owner role, run FastAPI with a separate restricted role, allow that role only the required table/sequence/function privileges, and restrict incoming database connections to the API host.
 
 ## API
 
-FastAPI API routes are under `/api/v1`. Protected routes use a bearer access token; the browser accesses them through the same-origin Next.js proxy.
+FastAPI API routes are under `/api/v1`. Protected routes use a bearer access token; the browser accesses them through the same-origin Express proxy.
 
 | Method                           | Path                                                     | Purpose                                                  |
 | -------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
@@ -83,6 +88,7 @@ FastAPI API routes are under `/api/v1`. Protected routes use a bearer access tok
 | `POST`                           | `/api/v1/sessions/{session_id}/complete`                 | Mark a session as conducted                              |
 | `PUT`                            | `/api/v1/sessions/{session_id}/outcome`                  | Save shared session notes and next steps                 |
 | `GET`                            | `/api/v1/conversations`                                  | List authorized conversations                            |
+| `POST`                           | `/api/v1/conversations/start`                            | Start a direct chat request with an introductory message |
 | `GET`, `POST`                    | `/api/v1/conversations/{conversation_id}/messages`       | Read or send paginated messages                          |
 | `POST`                           | `/api/v1/conversations/{conversation_id}/read`           | Mark conversation messages read                          |
 | `DELETE`                         | `/api/v1/messages/{message_id}`                          | Delete the caller's own message                          |
@@ -114,16 +120,18 @@ Discovery filters by name, university, subject, available weekday, and format, t
 backend/app/             FastAPI auth, PostgreSQL access, domain API
 backend/tests/           API authorization and matching tests
 migrations/              PostgreSQL schema and notification/rate-limit triggers
-src/app/                 Next.js routes and cookie-backed protected layouts
-src/app/api/              Same-origin auth and authenticated API proxies
+src/App.tsx               React Router routes and page composition
+src/main.tsx              React application entry point
+server/index.mjs          Express static host and cookie-backed API proxy
 src/components/           React auth, profile, discovery, groups, chat, sessions
 src/lib/                  API clients, schemas, and shared types
+vite.config.ts            Vite, React, Tailwind, and development API proxy
 e2e/                      Playwright UI/API smoke tests
 ```
 
 ## Requirements and local setup (Windows PowerShell)
 
-- Node.js 20.9+
+- Node.js 20.19+
 - Python 3.12+
 - PostgreSQL 15+
 - npm and `psql`
@@ -156,12 +164,12 @@ e2e/                      Playwright UI/API smoke tests
    DATABASE_URL=postgresql://study_buddy:your-password@localhost:5432/study_buddy
    JWT_SECRET_KEY=replace-with-generated-random-value
    API_URL=http://localhost:8000
-   NEXT_PUBLIC_API_URL=http://localhost:8000
+   VITE_API_URL=http://localhost:8000
    FRONTEND_URL=http://localhost:1000
    CORS_ORIGINS=["http://localhost:1000","http://127.0.0.1:1000"]
    ```
 
-   `DATABASE_URL` and `JWT_SECRET_KEY` are server-only. Do not prefix them with `NEXT_PUBLIC_`.
+   `DATABASE_URL`, `JWT_SECRET_KEY`, and `API_URL` are server-only. Do not prefix them with `VITE_`.
 
 5. Start the API and frontend in separate terminals:
 
@@ -191,7 +199,7 @@ Unit/API tests cover profile validation, match-score calculations, and rejection
 
 ## Deployment and operational security
 
-Deploy Next.js and FastAPI to trusted hosts and PostgreSQL to a private managed or self-hosted database. Set `API_URL` and `FRONTEND_URL` on the Next.js server, `NEXT_PUBLIC_API_URL` to the reachable HTTPS API origin for WebSockets, and set `DATABASE_URL`, `JWT_SECRET_KEY`, and CORS origins on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
+Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and `FRONTEND_URL` on the Express server, `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time, and set `DATABASE_URL`, `JWT_SECRET_KEY`, and CORS origins on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
 
 ## Current limitations
 

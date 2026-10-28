@@ -2,8 +2,9 @@
 node_modules
 .npm
 
-# Next.js build cache (builder stage does a fresh build)
-.next
+# Build output is recreated in the builder stage.
+dist
+.vite
 
 # Python virtualenv
 .venv

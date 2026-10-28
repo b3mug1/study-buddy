@@ -20,12 +20,13 @@ __pycache__/
 .ruff_cache/
 .venv/
 
-# next.js
-/.next/
-/out/
+# Vite
+/dist/
+/.vite/
 
 # production
 /build
+/.next/
 
 # misc
 .DS_Store
@@ -45,7 +46,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # local env with secrets
 .env.local

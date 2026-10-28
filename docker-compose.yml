@@ -44,14 +44,14 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8002}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8002}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     environment:
       API_URL: http://api:8000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8002}
+      API_PROXY_PORT: 1000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:1000}
     ports:
       - "1000:1000"
