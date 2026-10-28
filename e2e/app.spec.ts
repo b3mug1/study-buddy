@@ -9,7 +9,7 @@ test("landing page exposes the main Study Buddy actions", async ({ page }) => {
     page.getByRole("link", { name: /get started/i }).first(),
   ).toHaveAttribute("href", "/register");
   await expect(
-    page.getByRole("link", { name: /log in/i }).first(),
+    page.getByRole("link", { name: /sign in/i }).first(),
   ).toHaveAttribute("href", "/login");
 });
 
@@ -36,7 +36,7 @@ test("registration validates short passwords before contacting the API", async (
   await page.goto("/register");
   await page.getByLabel("Full name").fill("Alex Student");
   await page.getByLabel("University email").fill("alex@example.edu");
-  await page.getByLabel("Password").fill("short");
+  await page.getByLabel("Password", { exact: true }).fill("short");
   await page.getByRole("button", { name: /create account/i }).click();
 
   await expect(page.getByText(/at least 8 characters/i)).toBeVisible();
