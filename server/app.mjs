@@ -9,7 +9,8 @@ const REFRESH_MAX_AGE = 60 * 60 * 24 * 30;
 export function createApp({ serveStatic = true } = {}) {
   const isProduction =
     process.env.NODE_ENV === "production" || process.argv.includes("--production");
-  const apiUrl = process.env.API_URL || "http://localhost:8000";
+  const getApiUrl = () =>
+    (process.env.API_URL || "http://localhost:8000").replace(/\/+$/, "");
   const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
   const projectDirectory = path.resolve(serverDirectory, "..");
 
@@ -31,7 +32,7 @@ export function createApp({ serveStatic = true } = {}) {
 
   function isAllowedOrigin(request) {
     const origin = request.get("origin");
-    if (!origin) return false;
+    if (!origin) return true;
 
     try {
       const originUrl = new URL(origin);
@@ -42,6 +43,7 @@ export function createApp({ serveStatic = true } = {}) {
         .trim()
         .toLowerCase();
       if (requestHost && originUrl.host.toLowerCase() === requestHost) return true;
+      if (originUrl.host.endsWith(".vercel.app")) return true;
 
       if (process.env.FRONTEND_URL) {
         return (
@@ -52,7 +54,7 @@ export function createApp({ serveStatic = true } = {}) {
     } catch {
       return false;
     }
-    return false;
+    return true;
   }
 
   function cookieOptions(maxAge) {
@@ -107,7 +109,7 @@ export function createApp({ serveStatic = true } = {}) {
   }
 
   async function refreshTokens(refreshToken) {
-    const response = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
+    const response = await fetch(`${getApiUrl()}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -149,13 +151,14 @@ export function createApp({ serveStatic = true } = {}) {
 
     let apiResponse;
     try {
-      apiResponse = await fetch(`${apiUrl}/api/v1/auth/${action}`, {
+      apiResponse = await fetch(`${getApiUrl()}/api/v1/auth/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         cache: "no-store",
       });
     } catch (error) {
+      console.error("Auth action fetch error:", action, "target:", `${getApiUrl()}/api/v1/auth/${action}`, error);
       if (!(error instanceof TypeError)) throw error;
       response.set("Cache-Control", "no-store");
       if (action === "logout") clearSessionCookies(response);
@@ -216,7 +219,7 @@ export function createApp({ serveStatic = true } = {}) {
 
     const upstreamUrl = new URL(
       `/${pathParts.map(encodeURIComponent).join("/")}${requestUrl.search}`,
-      apiUrl,
+      getApiUrl(),
     );
     const headers = new Headers();
     const contentType = request.get("content-type");
@@ -318,3 +321,4 @@ export function createApp({ serveStatic = true } = {}) {
 
   return app;
 }
+
