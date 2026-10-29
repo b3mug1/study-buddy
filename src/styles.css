@@ -1743,6 +1743,1112 @@ button:disabled,
 }
 
 /* ==========================================================================
+   9b. STUDY DESK SHELL (sidebar + top bar + desk cards)
+   Mirrors the reference dashboard: fixed left rail, compact top bar,
+   and a three-card workspace (tasks / notes / schedule).
+   ========================================================================== */
+
+.desk-shell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--background);
+}
+
+/* --- Rail (sidebar) -------------------------------------------------------- */
+
+.desk-rail {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  width: 17rem;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  transform: translateX(-100%);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.desk-rail--open {
+  transform: translateX(0);
+  box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.32);
+}
+
+@media (min-width: 1120px) {
+  .desk-rail {
+    transform: translateX(0);
+    box-shadow: none;
+  }
+}
+
+.desk-rail__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1.1rem 1.15rem;
+}
+
+.desk-rail__mark {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.desk-rail__wordmark {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.desk-rail__nav {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow-y: auto;
+  padding: 0.35rem 0.8rem 1rem;
+}
+
+.desk-rail__group {
+  display: grid;
+  gap: 0.15rem;
+  padding-top: 0.85rem;
+}
+
+.desk-rail__group-label {
+  padding-inline: 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.desk-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  padding-inline: 0.7rem;
+  border-radius: var(--radius-sharp);
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.desk-nav-link:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.desk-nav-link[aria-current="page"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.desk-nav-link[aria-current="page"] .desk-nav-link__count {
+  background: color-mix(in srgb, var(--background) 22%, transparent);
+  color: var(--background);
+}
+
+.desk-nav-link__icon {
+  display: grid;
+  width: 1.35rem;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.desk-nav-link__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-nav-link__count {
+  display: inline-grid;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  padding-inline: 0.35rem;
+  color: var(--accent-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-rail__footer {
+  display: grid;
+  gap: 0.15rem;
+  border-top: 1px solid var(--border);
+  padding: 0.7rem 0.8rem 0.9rem;
+}
+
+.desk-rail__tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.3rem 0;
+}
+
+.desk-rail__signout {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  padding-inline: 0.7rem;
+  border-radius: var(--radius-sharp);
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.desk-rail__signout:hover {
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
+  color: var(--destructive);
+}
+
+.desk-rail__signout:disabled {
+  opacity: 0.6;
+}
+
+/* --- Main column ---------------------------------------------------------- */
+
+.desk-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+@media (min-width: 1120px) {
+  .desk-main {
+    margin-left: 17rem;
+  }
+}
+
+.desk-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  padding: 0.7rem 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.desk-topbar__spacer {
+  min-width: 0;
+  flex: 1;
+}
+
+.desk-icon-button {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  background: var(--card);
+  color: var(--foreground);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.desk-icon-button:hover {
+  border-color: var(--input);
+  background: var(--muted);
+}
+
+.desk-icon-button--plain {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.desk-icon-button--plain:hover {
+  border-color: transparent;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.desk-rail-toggle {
+  display: grid;
+}
+
+@media (min-width: 1120px) {
+  .desk-rail-toggle {
+    display: none;
+  }
+}
+
+.desk-create {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid #6d4aff;
+  border-radius: var(--radius-sharp);
+  background: #7c5cff;
+  padding-inline: 0.95rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 650;
+  transition: background-color 150ms ease;
+}
+
+.desk-create:hover {
+  background: #6d4aff;
+}
+
+.desk-create__icon {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, #ffffff 22%, transparent);
+}
+
+.desk-create__label {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .desk-create__label {
+    display: inline;
+  }
+}
+
+/* --- Search --------------------------------------------------------------- */
+
+.desk-search {
+  position: relative;
+  display: none;
+  min-width: 0;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .desk-search {
+    display: flex;
+    width: clamp(12rem, 26vw, 22rem);
+  }
+}
+
+.desk-search[data-open="true"] {
+  display: flex;
+  position: absolute;
+  inset-inline: 0.75rem;
+  z-index: 40;
+  width: auto;
+}
+
+.desk-search__input {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  padding: 0.55rem 1rem 0.55rem 2.6rem;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.desk-search__input::placeholder {
+  color: var(--placeholder);
+}
+
+.desk-search__input:focus {
+  border-color: #7c5cff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #7c5cff 22%, transparent);
+}
+
+.desk-search__icon {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.desk-search__results {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 45;
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--popover);
+  box-shadow: 0 20px 44px -18px rgb(0 0 0 / 0.3);
+  padding: 0.35rem;
+}
+
+.desk-search__empty {
+  padding: 0.75rem 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.desk-search__item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sharp);
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+.desk-search__item:hover,
+.desk-search__item:focus-visible {
+  background: var(--muted);
+}
+
+.desk-search__icon-badge {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  background: var(--muted);
+  color: var(--brand-accent);
+}
+
+/* --- Account chip --------------------------------------------------------- */
+
+.desk-account {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.desk-account__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.desk-account__trigger:hover {
+  border-color: var(--input);
+  background: var(--muted);
+}
+
+.desk-account__avatar {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: #7c5cff;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.desk-account__text {
+  display: none;
+  min-width: 0;
+  text-align: left;
+  line-height: 1.15;
+}
+
+@media (min-width: 768px) {
+  .desk-account__text {
+    display: block;
+  }
+}
+
+.desk-account__name {
+  display: block;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.desk-account__meta {
+  display: block;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+}
+
+.desk-account__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 45;
+  min-width: 15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--popover);
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.3);
+  padding: 0.35rem;
+}
+
+.desk-account__header {
+  padding: 0.5rem 0.6rem 0.6rem;
+}
+
+.desk-account__option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.5rem;
+  padding-inline: 0.6rem;
+  border-radius: var(--radius-sharp);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+.desk-account__option:hover {
+  background: var(--muted);
+}
+
+.desk-account__option--danger {
+  color: var(--destructive);
+}
+
+.desk-account__option--danger:hover {
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
+}
+
+.desk-account__divider {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  background: var(--border);
+}
+
+/* --- Workspace body ------------------------------------------------------- */
+
+.desk-body {
+  width: 100%;
+  max-width: 82rem;
+  padding: 1.15rem 1rem 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .desk-body {
+    padding: 1.5rem 1.75rem 3rem;
+  }
+}
+
+.desk-grid {
+  display: grid;
+  gap: 1.15rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .desk-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+
+  .desk-grid__column {
+    display: grid;
+    gap: 1.15rem;
+    align-content: start;
+  }
+}
+
+/* --- Desk card ------------------------------------------------------------ */
+
+.desk-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 1.15rem;
+  background: var(--card);
+  color: var(--card-foreground);
+  padding: 1.15rem;
+}
+
+@media (min-width: 768px) {
+  .desk-card {
+    padding: 1.35rem;
+  }
+}
+
+.desk-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.desk-card__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .desk-card__title {
+    font-size: 1.6rem;
+  }
+}
+
+.desk-card__add {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--card);
+  color: var(--foreground);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.desk-card__add:hover {
+  border-color: var(--input);
+  background: var(--muted);
+  transform: translateY(-1px);
+}
+
+/* --- Filter chips --------------------------------------------------------- */
+
+.desk-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.desk-filter {
+  min-height: 2.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding-inline: 0.95rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.desk-filter:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.desk-filter[aria-pressed="true"] {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+}
+
+/* --- Task rows ------------------------------------------------------------ */
+
+.desk-task-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desk-task {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.8rem;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.desk-task:hover {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+.desk-task--featured {
+  background: var(--muted);
+}
+
+.desk-task__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.desk-task__title {
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.desk-task__subject {
+  margin-top: 0.3rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.desk-task__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.desk-task__comments {
+  flex-shrink: 0;
+}
+
+.desk-task__badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  padding: 0.18rem 0.6rem;
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.desk-task__badge--in-progress {
+  background: #f0a02a;
+}
+
+.desk-task__badge--todo {
+  background: #7c5cff;
+}
+
+.desk-task__badge--done {
+  background: var(--success);
+}
+
+/* --- Chevron strip (task progress) --------------------------------------- */
+
+.desk-stripes {
+  display: block;
+  width: 100%;
+  height: 1.35rem;
+  margin-top: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.desk-stripes__fill {
+  display: block;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  background-color: #86e07a;
+  background-image: repeating-linear-gradient(
+    -60deg,
+    color-mix(in srgb, #2f9e44 42%, transparent) 0 4px,
+    transparent 4px 9px
+  );
+  transition: width 260ms ease;
+}
+
+.desk-stripes--neutral {
+  background-image: repeating-linear-gradient(
+    -60deg,
+    color-mix(in srgb, var(--marker) 30%, transparent) 0 3px,
+    transparent 3px 8px
+  );
+}
+
+/* --- Desk buttons --------------------------------------------------------- */
+
+.desk-button {
+  display: flex;
+  width: 100%;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 650;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.desk-button:hover {
+  border-color: var(--input);
+  background: var(--muted);
+}
+
+.desk-empty {
+  display: grid;
+  place-items: center;
+  gap: 0.5rem;
+  min-height: 7rem;
+  margin-top: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* --- Notes ---------------------------------------------------------------- */
+
+.desk-notes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.desk-note {
+  position: relative;
+  display: flex;
+  min-height: 12.5rem;
+  flex-direction: column;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  padding: 1rem;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.desk-note:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -20px rgb(0 0 0 / 0.4);
+}
+
+.desk-note--0 {
+  background: linear-gradient(150deg, #3fdd8b 0%, #2fc47c 100%);
+  color: #06301d;
+}
+
+.desk-note--1 {
+  background: linear-gradient(150deg, #a98bff 0%, #8f6bff 100%);
+  color: #1b0b47;
+}
+
+.desk-note--2 {
+  background: linear-gradient(150deg, #ffb35c 0%, #f79a3c 100%);
+  color: #3d2103;
+}
+
+.desk-note--3 {
+  background: linear-gradient(150deg, #6ec8ff 0%, #4aabf0 100%);
+  color: #04263d;
+}
+
+.desk-note__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.desk-note__title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.desk-note__menu {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, #ffffff 30%, transparent);
+  color: inherit;
+}
+
+.desk-note__menu:hover {
+  background: color-mix(in srgb, #ffffff 48%, transparent);
+}
+
+.desk-note__body {
+  margin-top: 0.65rem;
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.desk-note__date {
+  margin-top: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+/* --- Schedule ------------------------------------------------------------- */
+
+.desk-schedule__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.desk-week-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  padding-inline: 0.95rem;
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.desk-week-picker:hover {
+  border-color: var(--input);
+  background: var(--muted);
+}
+
+.desk-table {
+  width: 100%;
+  margin-top: 1.15rem;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.desk-table thead th {
+  border-bottom: 1px solid var(--border);
+  padding: 0 0.5rem 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.desk-table tbody td {
+  padding: 0.5rem;
+  vertical-align: middle;
+  font-size: 0.875rem;
+}
+
+.desk-table tbody tr {
+  border-radius: 0.7rem;
+  transition: background-color 150ms ease;
+}
+
+.desk-table tbody tr:hover {
+  background: var(--muted);
+}
+
+.desk-table__time {
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-teacher {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.desk-teacher__avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.desk-teacher__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-format {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--muted);
+  padding: 0.15rem 0.6rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* --- Mobile rail scrim ---------------------------------------------------- */
+
+.desk-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  border: 0;
+  background: rgb(0 0 0 / 0.45);
+}
+
+@media (min-width: 1120px) {
+  .desk-scrim {
+    display: none;
+  }
+}
+
+/* --- Notes workspace page ------------------------------------------------- */
+
+.notes-page {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.notes-composer {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 1.15rem;
+  background: var(--card);
+  padding: 1.15rem;
+}
+
+.notes-composer__row {
+  display: grid;
+  gap: 0.7rem;
+}
+
+@media (min-width: 768px) {
+  .notes-composer__row {
+    grid-template-columns: minmax(0, 1fr) 11rem auto;
+    align-items: end;
+  }
+}
+
+.notes-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.notes-field__label {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notes-grid__item {
+  display: flex;
+  min-width: 0;
+}
+
+.notes-grid__item .desk-note {
+  width: 100%;
+}
+
+.notes-note__tools {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.notes-note__tool {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, #ffffff 30%, transparent);
+  color: inherit;
+}
+
+.notes-note__tool:hover {
+  background: color-mix(in srgb, #ffffff 48%, transparent);
+}
+
+/* ==========================================================================
    10. PRINT
    ========================================================================== */
 
@@ -1754,9 +2860,17 @@ button:disabled,
 
   .landing-header,
   .landing-footer,
+  .desk-rail,
+  .desk-topbar,
+  .desk-scrim,
   .btn,
+  .desk-button,
   .portal-button {
     display: none !important;
+  }
+
+  .desk-main {
+    margin-left: 0;
   }
 
   .dashboard-card,

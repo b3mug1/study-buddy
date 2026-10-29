@@ -80,6 +80,11 @@ const DashboardView = lazy(() =>
     default: module.DashboardView,
   })),
 );
+const NotesPage = lazy(() =>
+  import("@/components/workspace/notes-page").then((module) => ({
+    default: module.NotesPage,
+  })),
+);
 const DiscoverPage = lazy(() =>
   import("@/components/workspace/discover-page").then((module) => ({
     default: module.DiscoverPage,
@@ -412,6 +417,7 @@ export function App() {
           <Route path="/onboarding" element={<OnboardingRoute />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route path="/my-profile" element={<MyProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
