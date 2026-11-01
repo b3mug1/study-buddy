@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Settings,
   StickyNote,
+  UserRound,
 } from "lucide-react";
 import Link from "@/components/navigation/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -49,7 +50,8 @@ const primaryLinks: RailLink[] = [
 ];
 
 const secondaryLinks: RailLink[] = [
-  { href: "/my-profile", label: "Settings", icon: Settings },
+  { href: "/my-profile", label: "My profile", icon: UserRound },
+  { href: "/settings/profile", label: "Settings", icon: Settings },
 ];
 
 export function DeskRail({
@@ -69,11 +71,7 @@ export function DeskRail({
   const pathname = useLocation().pathname;
 
   function isActive(href: string) {
-    return (
-      pathname === href ||
-      pathname.startsWith(`${href}/`) ||
-      (href === "/my-profile" && pathname.startsWith("/settings"))
-    );
+    return pathname === href || pathname.startsWith(`${href}/`);
   }
 
   function renderLink({ href, label, icon: Icon, count }: RailLink) {

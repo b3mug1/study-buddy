@@ -270,7 +270,7 @@ export function DeskTopbar({
               className="desk-account__option"
               onClick={() => {
                 setMenuOpen(false);
-                navigate("/my-profile");
+                navigate("/settings/profile");
               }}
             >
               <Settings size={16} aria-hidden="true" />

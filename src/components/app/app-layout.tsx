@@ -139,9 +139,16 @@ export function AppLayout() {
       },
       {
         id: "page-profile",
-        label: t("Settings"),
+        label: t("My profile"),
         meta: t("Your profile"),
         href: "/my-profile",
+        kind: "page",
+      },
+      {
+        id: "page-settings",
+        label: t("Settings"),
+        meta: t("Edit profile"),
+        href: "/settings/profile",
         kind: "page",
       },
     ];
