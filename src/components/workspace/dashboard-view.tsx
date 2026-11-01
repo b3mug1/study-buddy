@@ -206,11 +206,8 @@ export function DashboardView() {
 
       <div className="desk-grid mt-6">
         <DeskTasksCard tasks={deskTasks} />
-
-        <div className="desk-grid__column">
-          <DeskNotesCard notes={notes} />
-          <DeskScheduleCard sessions={deskSessions} />
-        </div>
+        <DeskNotesCard notes={notes} />
+        <DeskScheduleCard sessions={deskSessions} />
       </div>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-3" data-motion>

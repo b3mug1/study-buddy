@@ -10,36 +10,36 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces & text: white canvas, black text */
-  --background: #ffffff;
-  --foreground: #111111;
+  /* Soft canvas and crisp ink keep long study sessions comfortable. */
+  --background: #f5f6fa;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #111111;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #111111;
+  --popover-foreground: #111827;
 
-  /* Brand: orange */
-  --primary: #ea580c;
-  --primary-hover: #c2410c; /* 4.9:1 with white text */
+  /* Brand: indigo */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
   --primary-foreground: #ffffff;
-  --brand-accent: #c2410c;
+  --brand-accent: #4f46e5;
 
-  /* Neutral: warm off-whites so surfaces stay readable on pure white */
-  --secondary: #f3f1ed;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f7f5f2;
-  --muted-foreground: #5c5c5c; /* ~7:1 on white */
-  --accent: #fff1e7;
-  --accent-foreground: #9a3412;
+  /* Neutral: cool off-whites so cards read clearly on the canvas */
+  --secondary: #eef0ff;
+  --secondary-foreground: #312e81;
+  --muted: #f0f1f7;
+  --muted-foreground: #596174;
+  --accent: #e8eaff;
+  --accent-foreground: #3730a3;
 
   /* Lines & focus */
-  --border: #e4e1db;
-  --input: #d3cec6;
-  --ring: #ea580c;
+  --border: #e3e6ef;
+  --input: #cbd0df;
+  --ring: #4f46e5;
 
   /* Status */
   --destructive: #b91c1c;
-  --success: #15803d;
+  --success: #10b981;
   --warning: #a16207;
   --info: #1d4ed8;
 
@@ -49,14 +49,13 @@
   --on-dark: #ffffff;
 
   /* Radius scale: sharp (inputs/buttons) → base (cards) → pill */
-  --radius-sharp: 0.375rem;
-  --radius: 0.5rem;
+  --radius-sharp: 0.625rem;
+  --radius: 0.875rem;
   --radius-pill: 999px;
 
   /* Type */
-  --font-serif: Georgia, "Times New Roman", serif;
   --font-sans-stack:
-    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 
   /* Layout */
   --tap-target: 2.75rem;
@@ -65,51 +64,51 @@
 .dark {
   color-scheme: dark;
 
-  --background: #0f0f0f;
-  --foreground: #f5f5f5;
-  --card: #181818;
+  --background: #111321;
+  --foreground: #f4f5fb;
+  --card: #191c2c;
   --card-foreground: #f5f5f5;
-  --popover: #181818;
+  --popover: #191c2c;
   --popover-foreground: #f5f5f5;
 
-  --primary: #fb923c;
-  --primary-hover: color-mix(in srgb, var(--primary) 88%, #fff);
-  --primary-foreground: #1a0f06;
-  --brand-accent: #fb923c;
+  --primary: #a5b4fc;
+  --primary-hover: #c7d2fe;
+  --primary-foreground: #1e1b4b;
+  --brand-accent: #a5b4fc;
 
-  --secondary: #222222;
-  --secondary-foreground: #f0f0f0;
-  --muted: #1f1f1f;
-  --muted-foreground: #b0b0b0;
-  --accent: #2a1a10;
-  --accent-foreground: #fdba74;
+  --secondary: #252943;
+  --secondary-foreground: #e0e7ff;
+  --muted: #202337;
+  --muted-foreground: #aeb4ca;
+  --accent: #292e4b;
+  --accent-foreground: #c7d2fe;
 
-  --border: #2e2e2e;
-  --input: #3d3d3d;
-  --ring: #fb923c;
+  --border: #30344b;
+  --input: #424761;
+  --ring: #a5b4fc;
 
   --destructive: #f87171;
-  --success: #4ade80;
+  --success: #34d399;
   --warning: #fbbf24;
   --info: #60a5fa;
 
-  --marker: #6b6b6b;
-  --on-dark: #0f0f0f;
+  --marker: #737a92;
+  --on-dark: #111321;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans:
-    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --font-serif:
-    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Code", Consolas, ui-monospace, monospace;
-  /* Brand orange scale, for accents that need a tint or shade */
-  --color-brand: #ea580c;
-  --color-brand-strong: #c2410c;
-  --color-brand-soft: #fff1e7;
-  --color-brand-ink: #9a3412;
+  /* Brand indigo scale */
+  --color-brand: #4f46e5;
+  --color-brand-strong: #4338ca;
+  --color-brand-soft: #e8eaff;
+  --color-brand-ink: #3730a3;
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -173,7 +172,7 @@ h2,
 .brand-name,
 .dashboard-page h1,
 .dashboard-page h2 {
-  font-family: var(--font-sans-stack);
+  font-family: "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.035em;
   text-wrap: balance;
@@ -2013,18 +2012,18 @@ button:disabled,
   min-height: 2.7rem;
   align-items: center;
   gap: 0.55rem;
-  border: 1px solid #6d4aff;
+  border: 1px solid var(--primary);
   border-radius: var(--radius-sharp);
-  background: #7c5cff;
+  background: var(--primary);
   padding-inline: 0.95rem;
-  color: #ffffff;
+  color: var(--primary-foreground);
   font-size: 0.875rem;
   font-weight: 650;
   transition: background-color 150ms ease;
 }
 
 .desk-create:hover {
-  background: #6d4aff;
+  background: var(--primary-hover);
 }
 
 .desk-create__icon {
@@ -2091,8 +2090,8 @@ button:disabled,
 }
 
 .desk-search__input:focus {
-  border-color: #7c5cff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #7c5cff 22%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 .desk-search__icon {
@@ -2183,8 +2182,8 @@ button:disabled,
   flex-shrink: 0;
   place-items: center;
   border-radius: var(--radius-pill);
-  background: #7c5cff;
-  color: #ffffff;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -2294,13 +2293,13 @@ button:disabled,
 
 @media (min-width: 1024px) {
   .desk-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .desk-grid__column {
-    display: grid;
-    gap: 1.15rem;
-    align-content: start;
+@media (min-width: 1380px) {
+  .desk-grid {
+    grid-template-columns: minmax(16rem, 1fr) minmax(17rem, 1.05fr) minmax(22rem, 1.3fr);
   }
 }
 
@@ -2309,7 +2308,7 @@ button:disabled,
 .desk-card {
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 1.15rem;
+  border-radius: var(--radius);
   background: var(--card);
   color: var(--card-foreground);
   padding: 1.15rem;
@@ -2466,7 +2465,7 @@ button:disabled,
   align-items: center;
   border-radius: var(--radius-pill);
   padding: 0.18rem 0.6rem;
-  color: #ffffff;
+  color: var(--primary-foreground);
   font-size: 0.6875rem;
   font-weight: 700;
   white-space: nowrap;
@@ -2477,7 +2476,7 @@ button:disabled,
 }
 
 .desk-task__badge--todo {
-  background: #7c5cff;
+  background: var(--primary);
 }
 
 .desk-task__badge--done {
@@ -2783,7 +2782,7 @@ button:disabled,
   display: grid;
   gap: 0.85rem;
   border: 1px solid var(--border);
-  border-radius: 1.15rem;
+  border-radius: var(--radius);
   background: var(--card);
   padding: 1.15rem;
 }

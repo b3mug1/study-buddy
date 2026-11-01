@@ -49,3 +49,5 @@ yarn-error.log*
 
 # local env with secrets
 .env.local
+.vercel
+.env*
