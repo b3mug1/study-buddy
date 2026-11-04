@@ -1,8 +1,12 @@
 import hashlib
 import secrets
+import smtplib
+import ssl
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from email.message import EmailMessage
 from typing import Annotated, Any
+from urllib.parse import urlencode, urlsplit
 from uuid import UUID, uuid4
 
 import jwt
@@ -168,7 +172,7 @@ async def get_current_user(
             detail="Unable to validate the session.",
         ) from error
 
-    if not user:
+    if not user or not user["email_verified"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Your session is invalid or has expired. Sign in again.",
@@ -223,27 +227,108 @@ def _enforce_auth_rate_limit(
         ) from error
 
 
-@router.post("/register", response_model=AuthTokens)
-def register(request: RegisterRequest) -> AuthTokens:
+def _email_settings():
+    settings = get_settings()
+    if not settings.smtp_host or not settings.smtp_from or not settings.frontend_url:
+        raise HTTPException(status_code=503, detail="Email verification is not configured.")
+    frontend = urlsplit(settings.frontend_url)
+    if frontend.scheme != "https" and not (
+        frontend.scheme == "http" and frontend.hostname in {"localhost", "127.0.0.1"}
+    ):
+        raise HTTPException(status_code=503, detail="A secure frontend URL is required.")
+    if (
+        not frontend.hostname
+        or frontend.username
+        or frontend.password
+        or frontend.path not in {"", "/"}
+        or frontend.query
+        or frontend.fragment
+    ):
+        raise HTTPException(status_code=503, detail="FRONTEND_URL must be an origin.")
+    if not settings.smtp_use_tls and settings.smtp_host not in {"localhost", "127.0.0.1"}:
+        raise HTTPException(status_code=503, detail="SMTP TLS is required.")
+    if bool(settings.smtp_username) != bool(settings.smtp_password) or (
+        settings.smtp_username and not settings.smtp_use_tls
+    ):
+        raise HTTPException(status_code=503, detail="Secure SMTP credentials are required.")
+    return settings
+
+
+def _send_verification_email(user_id: UUID, email: str) -> None:
+    settings = _email_settings()
+    token = secrets.token_urlsafe(32)
+    with database_connection() as connection:
+        connection.execute(
+            """insert into email_verification_tokens(user_id,token_hash,expires_at)
+               values (%s,%s,%s)""",
+            (user_id, _token_hash(token), datetime.now(UTC) + timedelta(hours=24)),
+        )
+    link = f"{settings.frontend_url.rstrip('/')}/auth/verify?{urlencode({'token': token})}"
+    message = EmailMessage()
+    message["From"] = settings.smtp_from
+    message["To"] = email
+    message["Subject"] = "Verify your Study Buddy email"
+    message.set_content(
+        "Confirm your university email to activate your account:\n\n"
+        f"{link}\n\nThis link expires in 24 hours."
+    )
+    try:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
+            if settings.smtp_use_tls:
+                smtp.starttls(context=ssl.create_default_context())
+            if settings.smtp_username and settings.smtp_password:
+                smtp.login(settings.smtp_username, settings.smtp_password)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Verification email could not be sent. Try signing in later to resend it.",
+        ) from error
+
+
+@router.post("/register", status_code=status.HTTP_202_ACCEPTED)
+def register(request: RegisterRequest) -> dict[str, str]:
     _settings_with_secret()
+    _email_settings()
     _enforce_auth_rate_limit("register", request.email, 20, timedelta(hours=1))
-    user_id = uuid4()
+    new_user_id = uuid4()
     try:
         with database_connection() as connection:
-            connection.execute(
+            account = connection.execute(
                 """insert into users(id,email,password_hash,full_name,email_verified)
-                   values (%s,lower(%s),%s,%s,true)""",
+                   values (%s,lower(%s),%s,%s,false)
+                   on conflict (email) do update set
+                     password_hash=excluded.password_hash,
+                     full_name=excluded.full_name,updated_at=now()
+                   where users.email_verified=false
+                   returning id""",
                 (
-                    user_id,
+                    new_user_id,
                     request.email,
                     password_hasher.hash(request.password),
                     request.full_name,
                 ),
-            )
+            ).fetchone()
+            if not account:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email already exists. Please log in.",
+                )
+            user_id = account["id"]
             connection.execute(
                 """insert into profiles(id,full_name)
-                   values (%s,%s)""",
+                   values (%s,%s)
+                   on conflict (id) do update set full_name=excluded.full_name""",
                 (user_id, request.full_name),
+            )
+            connection.execute(
+                "delete from email_verification_tokens where user_id=%s",
+                (user_id,),
+            )
+            connection.execute(
+                """update refresh_sessions set revoked_at=now()
+                   where user_id=%s and revoked_at is null""",
+                (user_id,),
             )
     except DatabaseError as error:
         if error.code == "23505":
@@ -256,7 +341,8 @@ def register(request: RegisterRequest) -> AuthTokens:
             detail="Unable to create your account right now.",
         ) from error
 
-    return _create_tokens(user_id, request.email.lower())
+    _send_verification_email(user_id, request.email.lower())
+    return {"detail": "Check your university email for a verification link."}
 
 
 @router.post("/login", response_model=AuthTokens)
@@ -284,11 +370,11 @@ def login(request: LoginRequest) -> AuthTokens:
             detail="Email or password is incorrect.",
         ) from None
     if not user["email_verified"]:
-        with database_connection() as connection:
-            connection.execute(
-                "update users set email_verified=true where id=%s",
-                (user["id"],),
-            )
+        _send_verification_email(user["id"], user["email"])
+        raise HTTPException(
+            status_code=403,
+            detail="Check your university email for a verification link. A new link has been sent.",
+        )
     return _create_tokens(user["id"], user["email"])
 
 
@@ -308,12 +394,19 @@ def verify_email(request: VerifyEmailRequest) -> AuthTokens:
             )
         connection.execute("update users set email_verified=true where id=%s", (row["user_id"],))
         connection.execute(
+            """update refresh_sessions set revoked_at=now()
+               where user_id=%s and revoked_at is null""",
+            (row["user_id"],),
+        )
+        connection.execute(
             "update email_verification_tokens set used_at=now() where id=%s",
             (row["id"],),
         )
         user = connection.execute(
-            "select id,email from users where id=%s", (row["user_id"],)
+            "select id,email from users where id=%s and disabled_at is null", (row["user_id"],)
         ).fetchone()
+        if not user:
+            raise HTTPException(status_code=401, detail="Account is unavailable.")
     return _create_tokens(user["id"], user["email"])
 
 
@@ -340,6 +433,7 @@ def refresh(request: RefreshRequest) -> AuthTokens:
             or session["expires_at"] <= datetime.now(UTC)
             or not secrets.compare_digest(session["token_hash"], _token_hash(request.refresh_token))
             or session["disabled_at"] is not None
+            or not session["email_verified"]
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
