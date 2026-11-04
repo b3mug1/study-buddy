@@ -18,7 +18,7 @@ const MAX_TITLE_LENGTH = 120;
 const MAX_BODY_LENGTH = 1200;
 
 function storageKey(ownerId: string) {
-  return `${STORAGE_PREFIX}${ownerId || "anonymous"}`;
+  return `${STORAGE_PREFIX}${ownerId}`;
 }
 
 function isStudyNote(value: unknown): value is StudyNote {
@@ -53,7 +53,7 @@ export function sanitizeNoteBody(value: string) {
 }
 
 export function loadNotes(ownerId: string): StudyNote[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || !ownerId) return [];
   try {
     const raw = window.localStorage.getItem(storageKey(ownerId));
     if (!raw) return [];
@@ -72,8 +72,29 @@ export function loadNotes(ownerId: string): StudyNote[] {
   }
 }
 
+export function loadLegacyNotes(ownerId: string, fullName: string): StudyNote[] {
+  if (typeof window === "undefined" || !ownerId || !fullName) return [];
+  try {
+    if (window.localStorage.getItem(`${STORAGE_PREFIX}imported:${ownerId}:${fullName}`)) {
+      return [];
+    }
+  } catch {
+    return [];
+  }
+  return loadNotes(fullName);
+}
+
+export function markLegacyNotesImported(ownerId: string, fullName: string) {
+  if (typeof window === "undefined" || !ownerId || !fullName) return;
+  try {
+    window.localStorage.setItem(`${STORAGE_PREFIX}imported:${ownerId}:${fullName}`, "1");
+  } catch {
+    // The imported notes remain available under the account ID.
+  }
+}
+
 export function saveNotes(ownerId: string, notes: StudyNote[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !ownerId) return;
   try {
     window.localStorage.setItem(storageKey(ownerId), JSON.stringify(notes));
   } catch {
