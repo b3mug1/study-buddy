@@ -13,24 +13,21 @@ import { useI18n } from "@/lib/i18n";
 
 const features = [
   {
-    number: "01",
-    title: "Find your study circle",
+    title: "Pick your subjects",
     description:
-      "Meet students who share your subjects, interests, and preferred pace.",
+      "Tell us what you are taking this term. We match you with students in the same courses and at a similar pace.",
     icon: Compass,
   },
   {
-    number: "02",
-    title: "Make a clear plan",
+    title: "Agree on a time",
     description:
-      "Schedule sessions, divide group tasks, and keep useful materials together.",
+      "Propose a session, see who is free, and put it on everyone's calendar in one tap.",
     icon: CalendarDays,
   },
   {
-    number: "03",
-    title: "See your progress",
+    title: "Meet and check in",
     description:
-      "Set weekly goals and make each study session count toward them.",
+      "Share notes before the session and set a small goal for the week, so the next meeting builds on this one.",
     icon: Target,
   },
 ];
@@ -74,13 +71,12 @@ export function LandingPage() {
 
       <section className="landing-hero mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:py-24">
         <div>
-          <p className="academic-kicker">{t("A student learning network")}</p>
-          <h1 className="hero-title mt-5 max-w-xl text-balance">
-            {t("Find your people. Study smarter.")}
+          <h1 className="hero-title max-w-xl text-balance">
+            {t("Study with classmates who take your courses.")}
           </h1>
           <p className="mt-6 max-w-lg text-base leading-8 text-muted-foreground">
             {t(
-              "Find classmates who share your subjects and schedule. Plan sessions, exchange materials, and keep your goals moving.",
+              "Find people in your subjects and free hours. Set up sessions, share notes, and check in on each other.",
             )}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -93,19 +89,14 @@ export function LandingPage() {
               <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
-          <p className="landing-hero__note mt-10 max-w-sm border-l-2 border-[var(--brand-accent)] pl-4 text-sm leading-6 text-muted-foreground">
-            {t("A thoughtful space for university students")}
-          </p>
         </div>
 
         <figure className="planner-preview">
           <figcaption className="planner-preview__caption">
             <span>{t("Example workspace")}</span>
-            <span>STUDY BUDDY / 01</span>
           </figcaption>
           <div className="planner-preview__window" aria-hidden="true">
             <div className="planner-preview__rail">
-              <span className="planner-preview__monogram">SB</span>
               <span className="is-active">
                 <BookOpenCheck size={14} />
                 {t("Overview")}
@@ -121,7 +112,6 @@ export function LandingPage() {
             </div>
             <div className="planner-preview__content">
               <div className="planner-preview__heading">
-                <span className="academic-kicker">{t("This week")}</span>
                 <strong>{t("Your study week")}</strong>
               </div>
               <div className="planner-preview__section">
@@ -171,21 +161,17 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
           <div className="landing-features__heading">
             <div>
-              <p className="academic-kicker">{t("A practical study rhythm")}</p>
-              <h2 className="mt-3 text-balance text-3xl sm:text-4xl">
-                {t("Learn with purpose, together.")}
+              <h2 className="text-balance text-3xl sm:text-4xl">
+                {t("How it works")}
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-7 text-muted-foreground">
-              {t(
-                "Bring the structure of a study group to your everyday university life.",
-              )}
+              {t("Three steps from empty calendar to a group that meets.")}
             </p>
           </div>
           <ol className="feature-list mt-10">
-            {features.map(({ number, title, description, icon: Icon }) => (
-              <li key={number} className="feature-list__item">
-                <span className="feature-list__number">{number}</span>
+            {features.map(({ title, description, icon: Icon }) => (
+              <li key={title} className="feature-list__item">
                 <span className="feature-list__icon">
                   <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
                 </span>
@@ -200,11 +186,8 @@ export function LandingPage() {
       <section className="landing-closer mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
         <div className="landing-closer__inner">
           <div>
-            <p className="academic-kicker">
-              {t("The semester, in good company")}
-            </p>
-            <h2 className="mt-3 max-w-2xl text-balance text-3xl sm:text-4xl">
-              {t("A better way to study together.")}
+            <h2 className="max-w-2xl text-balance text-3xl sm:text-4xl">
+              {t("Your next study group could start this week.")}
             </h2>
           </div>
           <Link href="/register" className="landing-primary-cta">
