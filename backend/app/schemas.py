@@ -68,6 +68,7 @@ class ProfileUpsert(BaseModel):
 
 
 class ProfileResponse(BaseModel):
+    id: UUID
     full_name: str
     university_name: str
     major: str

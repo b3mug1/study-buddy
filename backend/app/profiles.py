@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Sequence
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -86,6 +87,7 @@ def _load_profile(user: CurrentUser) -> ProfileResponse:
         raise _database_error("load your profile") from error
 
     return ProfileResponse(
+        id=UUID(user.id),
         full_name=profile["full_name"],
         university_name=profile["university_name"],
         major=profile["major"],
