@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
   DeskRail,
@@ -11,7 +11,15 @@ import { authenticatedApiJson, ApiRequestError } from "@/lib/api-client";
 import type { DashboardData, StudentProfile } from "@/lib/api-types";
 import { useI18n } from "@/lib/i18n";
 import { loadNotes } from "@/lib/study-notes";
-import { LoaderCircle } from "lucide-react";
+import {
+  BookOpen,
+  Compass,
+  House,
+  LoaderCircle,
+  Menu,
+  MessageCircle,
+} from "lucide-react";
+import Link from "@/components/navigation/link";
 
 export type DeskContext = {
   profile: StudentProfile;
@@ -22,6 +30,7 @@ export type DeskContext = {
 export function AppLayout() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const pathname = useLocation().pathname;
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
@@ -68,7 +77,7 @@ export function AppLayout() {
   }, []);
 
   const notesCount = useMemo(
-    () => (profile ? loadNotes(profile.full_name ?? "").length : 0),
+    () => (profile ? loadNotes(profile.id).length : 0),
     [profile],
   );
 
@@ -90,7 +99,7 @@ export function AppLayout() {
     const entries: DeskSearchEntry[] = [
       {
         id: "page-dashboard",
-        label: t("Dashboard"),
+        label: t("Home"),
         meta: t("Overview"),
         href: "/dashboard",
         kind: "page",
@@ -104,30 +113,37 @@ export function AppLayout() {
       },
       {
         id: "page-groups",
-        label: t("Tasks"),
+        label: t("Study groups"),
         meta: t("Study groups"),
         href: "/groups",
         kind: "page",
       },
       {
         id: "page-progress",
-        label: t("Tests"),
+        label: t("Study goals"),
         meta: t("Study progress"),
         href: "/progress",
         kind: "page",
       },
       {
         id: "page-discover",
-        label: t("Reports"),
+        label: t("Find partner"),
         meta: t("Discover students"),
         href: "/discover",
         kind: "page",
       },
       {
         id: "page-messages",
-        label: t("Chat"),
+        label: t("Messages"),
         meta: t("Messages"),
         href: "/messages",
+        kind: "page",
+      },
+      {
+        id: "page-materials",
+        label: t("Materials"),
+        meta: t("Shared materials"),
+        href: "/materials",
         kind: "page",
       },
       {
@@ -241,10 +257,42 @@ export function AppLayout() {
           onToggleRail={rail.toggle}
           onSignOut={() => void handleSignOut()}
           signingOut={rail.signingOut}
+          unreadNotifications={dashboard?.unread_notifications ?? 0}
         />
         <div className="desk-body">
           <Outlet context={context} />
         </div>
+        <nav className="campus-mobile-nav" aria-label={t("Mobile navigation")}>
+          {[
+            { href: "/dashboard", label: t("Home"), icon: House },
+            { href: "/groups", label: t("Study groups"), icon: BookOpen },
+            { href: "/discover", label: t("Find partner"), icon: Compass },
+            { href: "/messages", label: t("Messages"), icon: MessageCircle },
+          ].map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={
+                pathname === href || pathname.startsWith(`${href}/`)
+                  ? "page"
+                  : undefined
+              }
+            >
+              <Icon size={19} aria-hidden="true" />
+              <span>{label}</span>
+            </Link>
+          ))}
+          <button
+            type="button"
+            aria-label={t("Open menu")}
+            aria-controls="study-desk-rail"
+            aria-expanded={rail.open}
+            onClick={rail.toggle}
+          >
+            <Menu size={19} aria-hidden="true" />
+            <span>{t("More")}</span>
+          </button>
+        </nav>
       </div>
     </div>
   );

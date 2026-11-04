@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   BarChart3,
-  BookOpenCheck,
+  BookOpen,
   CalendarDays,
-  ClipboardList,
-  History,
+  Compass,
   LayoutDashboard,
   LogOut,
   MessageCircle,
@@ -35,21 +34,27 @@ type RailLink = {
 };
 
 const primaryLinks: RailLink[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/groups", label: "Study groups", icon: BookOpen, count: "tasks" },
+  { href: "/discover", label: "Find partner", icon: Compass },
   {
     href: "/sessions",
     label: "Schedule",
     icon: CalendarDays,
     count: "sessions",
   },
-  { href: "/groups", label: "Tasks", icon: ClipboardList, count: "tasks" },
-  { href: "/progress", label: "Tests", icon: BarChart3 },
-  { href: "/discover", label: "Reports", icon: History },
-  { href: "/messages", label: "Chat", icon: MessageCircle, count: "messages" },
-  { href: "/notes", label: "Notes", icon: StickyNote, count: "notes" },
+  {
+    href: "/messages",
+    label: "Messages",
+    icon: MessageCircle,
+    count: "messages",
+  },
+  { href: "/materials", label: "Materials", icon: StickyNote },
 ];
 
 const secondaryLinks: RailLink[] = [
+  { href: "/progress", label: "Study goals", icon: BarChart3 },
+  { href: "/notes", label: "Notes", icon: StickyNote, count: "notes" },
   { href: "/my-profile", label: "My profile", icon: UserRound },
   { href: "/settings/profile", label: "Settings", icon: Settings },
 ];
@@ -102,10 +107,22 @@ export function DeskRail({
       aria-label={t("Dashboard navigation")}
     >
       <div className="desk-rail__brand">
-        <span className="desk-rail__mark" aria-hidden="true">
-          <BookOpenCheck size={18} />
-        </span>
-        <span className="desk-rail__wordmark">Study Buddy</span>
+        <Link
+          href="/dashboard"
+          className="desk-rail__brand-link"
+          onClick={onClose}
+          aria-label={t("Home")}
+        >
+          <span className="desk-rail__monogram" aria-hidden="true">
+            sb.
+          </span>
+          <span className="desk-rail__wordmark">
+            Study
+            <br />
+            Buddy
+          </span>
+        </Link>
+        <span className="desk-rail__edition">{t("Campus edition")}</span>
       </div>
 
       <nav className="desk-rail__nav">
