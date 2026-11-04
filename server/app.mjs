@@ -16,7 +16,17 @@ export function createApp({ serveStatic = true } = {}) {
 
   const app = express();
   app.disable("x-powered-by");
-  app.use(express.raw({ type: () => true, limit: "20mb" }));
+  app.use((_request, response, next) => {
+    response.set({
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' ws: wss:",
+    });
+    if (isProduction) response.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    next();
+  });
+  app.use(express.raw({ type: () => true, limit: "6mb" }));
 
   function readCookie(request, name) {
     const cookieHeader = request.headers.cookie;
@@ -32,29 +42,20 @@ export function createApp({ serveStatic = true } = {}) {
 
   function isAllowedOrigin(request) {
     const origin = request.get("origin");
-    if (!origin) return true;
+    if (!origin) return false;
 
     try {
       const originUrl = new URL(origin);
-      const requestHost = (
-        request.get("x-forwarded-host") || request.get("host") || ""
-      )
-        .split(",")[0]
-        .trim()
-        .toLowerCase();
-      if (requestHost && originUrl.host.toLowerCase() === requestHost) return true;
-      if (originUrl.host.endsWith(".vercel.app")) return true;
-
-      if (process.env.FRONTEND_URL) {
-        return (
-          originUrl.origin.toLowerCase() ===
-          new URL(process.env.FRONTEND_URL).origin.toLowerCase()
-        );
-      }
+      if (originUrl.origin !== origin || !["http:", "https:"].includes(originUrl.protocol)) return false;
+      const configuredOrigin = process.env.FRONTEND_URL
+        ? new URL(process.env.FRONTEND_URL).origin
+        : null;
+      if (configuredOrigin && origin === configuredOrigin) return true;
+      if (!isProduction && ["http://localhost:1000", "http://127.0.0.1:1000"].includes(origin)) return true;
     } catch {
       return false;
     }
-    return true;
+    return false;
   }
 
   function cookieOptions(maxAge) {
@@ -314,6 +315,9 @@ export function createApp({ serveStatic = true } = {}) {
   });
 
   app.use((error, _request, response, next) => {
+    if (error.status === 413) {
+      return response.status(413).json({ detail: "Request body is too large." });
+    }
     console.error("Request failed:", error);
     if (response.headersSent) return next(error);
     response.status(500).json({ detail: "The request could not be completed." });
