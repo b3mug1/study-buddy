@@ -7,7 +7,9 @@ import { useI18n } from "@/lib/i18n";
 import { useOutletContext } from "react-router";
 import {
   createNoteId,
+  loadLegacyNotes,
   loadNotes,
+  markLegacyNotesImported,
   sanitizeNoteBody,
   sanitizeNoteTitle,
   saveNotes,
@@ -18,9 +20,13 @@ import type { StudentProfile } from "@/lib/api-types";
 export function NotesPage() {
   const { t, locale } = useI18n();
   const { profile } = useOutletContext<{ profile: StudentProfile }>();
-  const ownerId = profile?.full_name ?? "";
+  const ownerId = profile?.id ?? "";
+  const legacyOwner = profile?.full_name ?? "";
   const [notes, setNotes] = useState<StudyNote[]>(() =>
-    loadNotes(profile?.full_name ?? ""),
+    loadNotes(ownerId),
+  );
+  const [legacyNotes, setLegacyNotes] = useState<StudyNote[]>(() =>
+    loadLegacyNotes(ownerId, legacyOwner),
   );
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -97,12 +103,32 @@ export function NotesPage() {
     <main className="notes-page">
       <header className="dashboard-heading" data-motion>
         <div>
-          <p className="academic-kicker">{t("Your study material")}</p>
+          <p className="text-sm font-semibold text-muted-foreground">{t("Your study material")}</p>
           <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">
             {t("My notes")}
           </h1>
         </div>
       </header>
+
+      {legacyNotes.length > 0 && (
+        <div className="rounded-lg border p-4 text-sm" role="note">
+          <p>{t("Older notes saved under this profile name are available on this browser. Import them only if they belong to you.")}</p>
+          <button
+            type="button"
+            className="btn mt-3"
+            onClick={() => {
+              const current = loadNotes(ownerId);
+              const existingIds = new Set(current.map((note) => note.id));
+              persist([...current, ...legacyNotes.filter((note) => !existingIds.has(note.id))]);
+              markLegacyNotesImported(ownerId, legacyOwner);
+              setLegacyNotes([]);
+              toast.success(t("Older notes imported."));
+            }}
+          >
+            {t("Import older notes")}
+          </button>
+        </div>
+      )}
 
       <form className="notes-composer" onSubmit={submit} data-motion>
         <div className="notes-composer__row">
