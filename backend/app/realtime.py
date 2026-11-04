@@ -2,6 +2,7 @@ import hashlib
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from threading import Lock
 from uuid import UUID
 
 import psycopg
@@ -14,6 +15,28 @@ from app.database import DatabaseError, database_connection
 router = APIRouter(prefix="/api/v1", tags=["realtime"])
 logger = logging.getLogger(__name__)
 TICKET_LIFETIME = timedelta(seconds=30)
+MAX_ACTIVE_SOCKETS = 32
+MAX_SOCKETS_PER_USER = 3
+_socket_lock = Lock()
+_active_sockets: dict[UUID, int] = {}
+
+
+def _reserve_socket(user_id: UUID) -> bool:
+    with _socket_lock:
+        if (sum(_active_sockets.values()) >= MAX_ACTIVE_SOCKETS
+                or _active_sockets.get(user_id, 0) >= MAX_SOCKETS_PER_USER):
+            return False
+        _active_sockets[user_id] = _active_sockets.get(user_id, 0) + 1
+        return True
+
+
+def _release_socket(user_id: UUID) -> None:
+    with _socket_lock:
+        remaining = _active_sockets[user_id] - 1
+        if remaining:
+            _active_sockets[user_id] = remaining
+        else:
+            del _active_sockets[user_id]
 
 
 def _hash_ticket(ticket: str) -> str:
@@ -112,8 +135,11 @@ async def conversation_socket(
         await websocket.close(code=1011, reason="Realtime service unavailable")
         return
 
-    await websocket.accept()
+    if not _reserve_socket(user_id):
+        await websocket.close(code=4429, reason="Too many realtime connections")
+        return
     try:
+        await websocket.accept()
         settings = get_settings()
         if not settings.database_url:
             await websocket.close(code=1011, reason="PostgreSQL is not configured")
@@ -164,3 +190,5 @@ async def conversation_socket(
             await websocket.close(code=1011, reason="Realtime service unavailable")
         except RuntimeError:
             return
+    finally:
+        _release_socket(user_id)

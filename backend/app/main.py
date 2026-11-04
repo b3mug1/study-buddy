@@ -1,3 +1,5 @@
+import re
+from collections import deque
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -16,6 +18,46 @@ from app.realtime import router as realtime_router
 from app.sessions import router as sessions_router
 
 settings = get_settings()
+MAX_MATERIAL_REQUEST_BYTES = 6 * 1024 * 1024
+MATERIAL_UPLOAD_PATH = re.compile(r"^/api/v1/groups/[^/]+/materials$")
+
+
+class MaterialBodyLimit:
+    def __init__(self, application):
+        self.application = application
+
+    async def __call__(self, scope, receive, send):
+        if (
+            scope["type"] != "http"
+            or scope["method"] != "POST"
+            or not MATERIAL_UPLOAD_PATH.fullmatch(scope["path"])
+        ):
+            await self.application(scope, receive, send)
+            return
+
+        chunks = deque()
+        size = 0
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                return
+            size += len(message.get("body", b""))
+            if size > MAX_MATERIAL_REQUEST_BYTES:
+                await JSONResponse(
+                    status_code=413,
+                    content={"detail": "Material request exceeds the 6 MB limit."},
+                )(scope, receive, send)
+                return
+            chunks.append(message)
+            if not message.get("more_body", False):
+                break
+
+        async def replay():
+            if chunks:
+                return chunks.popleft()
+            return await receive()
+
+        await self.application(scope, replay, send)
 
 
 @asynccontextmanager
@@ -31,6 +73,7 @@ app = FastAPI(
     description="Student profiles and study preferences for Study Buddy.",
     lifespan=lifespan,
 )
+app.add_middleware(MaterialBodyLimit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
