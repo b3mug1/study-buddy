@@ -1,46 +1,47 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router";
 import {
-  ArrowLeftRight,
   ArrowRight,
   BookOpen,
+  CalendarDays,
+  Clock3,
+  FileText,
   LoaderCircle,
-  StickyNote,
-  TrendingUp,
-  UserRoundPlus,
+  MessageCircle,
+  Plus,
+  UsersRound,
 } from "lucide-react";
 import Link from "@/components/navigation/link";
-import {
-  DeskNotesCard,
-  DeskScheduleCard,
-  DeskTasksCard,
-  type DeskSessionItem,
-  type DeskTaskItem,
-} from "@/components/workspace/desk-cards";
 import type { DeskContext } from "@/components/app/app-layout";
 import { authenticatedApiJson } from "@/lib/api-client";
-import type { DashboardData, GroupTask, StudyGoal } from "@/lib/api-types";
+import type {
+  DashboardData,
+  GroupTask,
+  StudyGoal,
+  StudySession,
+} from "@/lib/api-types";
 import { useI18n } from "@/lib/i18n";
-import { loadNotes, type StudyNote } from "@/lib/study-notes";
+import { loadNotes } from "@/lib/study-notes";
 
 type GroupTaskWithGroup = GroupTask & { group_name: string; subject: string };
 
-const MAX_TASKS = 4;
-
-function formatTime(value: string, locale: string) {
-  return new Date(value).toLocaleTimeString(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatDueDate(value: string | null, locale: string, fallback: string) {
-  if (!value) return fallback;
-  return new Date(value).toLocaleDateString(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function SectionHeading({
+  title,
+  href,
+  linkLabel,
+}: {
+  title: string;
+  href: string;
+  linkLabel: string;
+}) {
+  return (
+    <div className="campus-section__heading">
+      <h2>{title}</h2>
+      <Link href={href} className="campus-text-link">
+        {linkLabel} <ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </div>
+  );
 }
 
 export function DashboardView() {
@@ -49,12 +50,11 @@ export function DashboardView() {
   const [data, setData] = useState<DashboardData>();
   const [tasks, setTasks] = useState<GroupTaskWithGroup[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
-  const [notes] = useState<StudyNote[]>(() =>
-    loadNotes(profile.full_name ?? ""),
-  );
+  const [sessionDetails, setSessionDetails] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [taskError, setTaskError] = useState(false);
+  const notes = loadNotes(profile.id);
   const intlLocale =
     locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
 
@@ -62,8 +62,7 @@ export function DashboardView() {
     try {
       const dashboard = await authenticatedApiJson<DashboardData>("dashboard");
       setData(dashboard);
-
-      const [goalResult, taskResult] = await Promise.allSettled([
+      const [goalResult, taskResult, sessionResult] = await Promise.allSettled([
         authenticatedApiJson<StudyGoal[]>("goals"),
         Promise.allSettled(
           dashboard.study_groups.map(async (group) => {
@@ -77,10 +76,17 @@ export function DashboardView() {
             }));
           }),
         ),
+        authenticatedApiJson<StudySession[]>(
+          "sessions?upcoming_only=true&limit=5",
+        ),
       ]);
-
       if (goalResult.status === "fulfilled") setGoals(goalResult.value);
+      if (sessionResult.status === "fulfilled")
+        setSessionDetails(sessionResult.value);
       if (taskResult.status === "fulfilled") {
+        setTaskError(
+          taskResult.value.some((result) => result.status === "rejected"),
+        );
         setTasks(
           taskResult.value
             .filter(
@@ -90,12 +96,15 @@ export function DashboardView() {
                 result.status === "fulfilled",
             )
             .flatMap((result) => result.value)
+            .filter((task) => task.status !== "done")
             .sort((left, right) => {
               if (!left.due_at) return right.due_at ? 1 : 0;
               if (!right.due_at) return -1;
               return left.due_at.localeCompare(right.due_at);
             }),
         );
+      } else {
+        setTaskError(true);
       }
       setError("");
     } catch (loadError) {
@@ -113,212 +122,465 @@ export function DashboardView() {
     void Promise.resolve().then(load);
   }, [load]);
 
-  const deskTasks = useMemo<DeskTaskItem[]>(
-    () =>
-      tasks.slice(0, MAX_TASKS).map((task) => ({
-        id: task.id,
-        title: task.title,
-        groupId: task.group_id,
-        groupName: task.group_name,
-        subject: task.subject,
-        status: task.status,
-        dueLabel: formatDueDate(task.due_at, intlLocale, t("No due date")),
-        commentCount: 0,
-      })),
-    [intlLocale, t, tasks],
-  );
-
-  const deskSessions = useMemo<DeskSessionItem[]>(
-    () =>
-      (data?.upcoming_sessions ?? []).map((session) => ({
-        id: session.id,
-        subject: session.subject,
-        topic: session.topic,
-        timeLabel: formatTime(session.starts_at, intlLocale),
-        ownerName: profile.full_name || t("You"),
-        location: session.study_format,
-        format: session.study_format,
-      })),
-    [data, intlLocale, profile.full_name, t],
-  );
-
-  if (loading) {
+  if (loading)
     return (
       <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-muted-foreground">
         <LoaderCircle className="animate-spin" size={18} aria-hidden="true" />
         {t("Loading your study space...")}
       </div>
     );
-  }
-
-  if (!data) {
+  if (!data)
     return (
       <div role="alert" className="surface p-5 text-sm text-destructive">
         {error || t("Unable to load your dashboard.")}
       </div>
     );
-  }
 
-  const completedGoalSessions = goals.reduce(
+  const sessions = [...data.upcoming_sessions].sort((a, b) =>
+    a.starts_at.localeCompare(b.starts_at),
+  );
+  const nextSession = sessions[0];
+  const nextDetails = sessionDetails.find(
+    (session) => session.id === nextSession?.id,
+  );
+  const attending =
+    nextDetails?.participants.filter(
+      (participant) => participant.status === "accepted",
+    ) ?? [];
+  const completed = goals.reduce(
     (total, goal) => total + (goal.completed_this_week ?? 0),
     0,
   );
-  const targetGoalSessions = goals.reduce(
-    (total, goal) => total + goal.target_sessions,
-    0,
-  );
-  const goalProgress = targetGoalSessions
-    ? Math.min(
-        100,
-        Math.round((completedGoalSessions / targetGoalSessions) * 100),
-      )
-    : 0;
+  const target = goals.reduce((total, goal) => total + goal.target_sessions, 0);
   const unreadMessages = data.recent_conversations.reduce(
     (total, conversation) => total + conversation.unread_count,
     0,
   );
+  const dateFormat = new Intl.DateTimeFormat(intlLocale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const sessionDate = new Intl.DateTimeFormat(intlLocale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const sessionTime = new Intl.DateTimeFormat(intlLocale, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-heading" data-motion>
+    <main className="dashboard-page campus-dashboard">
+      <header className="campus-dashboard__intro">
         <div>
-          <p className="academic-kicker">{profile.university_name}</p>
-          <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">
+          <p className="campus-kicker">
+            {profile.university_name || t("Your study space")}
+          </p>
+          <h1>{t("Your campus, your people.")}</h1>
+          <p className="campus-dashboard__welcome">
             {t("Good to see you, {name}.", {
               name: profile.full_name.trim().split(/\s+/)[0] || "",
             })}
-          </h1>
+          </p>
         </div>
-        <Link href="/sessions" className="portal-button">
-          <BookOpen size={16} aria-hidden="true" />
-          {t("Plan a study session")}
-        </Link>
+        <p className="campus-dashboard__date">
+          <CalendarDays size={17} aria-hidden="true" />
+          {dateFormat.format(new Date())}
+        </p>
       </header>
-
       {error && (
-        <p
-          role="status"
-          className="mt-5 border border-accent bg-accent px-4 py-3 text-sm text-accent-foreground"
-        >
+        <p role="status" className="campus-notice">
           {error}
         </p>
       )}
 
-      <div className="desk-grid mt-6">
-        <DeskTasksCard tasks={deskTasks} />
-        <DeskNotesCard notes={notes} />
-        <DeskScheduleCard sessions={deskSessions} />
-      </div>
-
-      <section className="mt-6 grid gap-4 lg:grid-cols-3" data-motion>
-        <article className="portal-card">
-          <p className="academic-kicker">{t("This week")}</p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <strong className="text-3xl font-bold tabular-nums text-primary">
-              {goalProgress}%
-            </strong>
-            <span className="text-sm text-muted-foreground">
-              {t("of your weekly goal")}
+      <div className="campus-dashboard__lead">
+        <section
+          className="campus-session"
+          aria-labelledby="next-session-heading"
+        >
+          <div className="campus-session__topline">
+            <span className="campus-kicker">{t("Next session")}</span>
+            <span className="campus-session__index">
+              {nextSession ? "01" : "00"} /{" "}
+              {String(sessions.length).padStart(2, "0")}
             </span>
-          </p>
-          <div className="portal-progress-track" aria-hidden="true">
-            <span style={{ width: `${goalProgress}%` }} />
           </div>
-          <Link href="/progress" className="portal-card-footer">
-            {t("Manage study goals")}{" "}
-            <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        </article>
-
-        <article className="portal-card">
-          <p className="academic-kicker">{t("Recent activity")}</p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <strong className="text-3xl font-bold tabular-nums text-primary">
-              {unreadMessages}
-            </strong>
-            <span className="text-sm text-muted-foreground">
-              {t("unread messages")}
-            </span>
-          </p>
-          <ul className="portal-list">
-            {data.recent_conversations.slice(0, 2).map((conversation) => (
-              <li key={conversation.id}>
-                <Link
-                  href={`/messages/${conversation.id}`}
-                  className="portal-message-link"
-                >
-                  <span className="portal-message-icon" aria-hidden="true">
-                    <ArrowLeftRight size={16} />
+          {nextSession ? (
+            <>
+              <div className="campus-session__content">
+                <div>
+                  <p className="campus-session__subject">
+                    {nextSession.subject}
+                  </p>
+                  <h2 id="next-session-heading">
+                    {nextSession.topic || nextSession.subject}
+                  </h2>
+                </div>
+                <div className="campus-session__date">
+                  <strong>
+                    {new Intl.DateTimeFormat(intlLocale, {
+                      day: "2-digit",
+                    }).format(new Date(nextSession.starts_at))}
+                  </strong>
+                  <span>
+                    {new Intl.DateTimeFormat(intlLocale, {
+                      month: "short",
+                    }).format(new Date(nextSession.starts_at))}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {conversation.title}
-                  </span>
+                </div>
+              </div>
+              <div className="campus-session__footer">
+                <div className="campus-session__meta">
+                  <p>
+                    <Clock3 size={16} aria-hidden="true" />
+                    {sessionDate.format(new Date(nextSession.starts_at))} ·{" "}
+                    {sessionTime.format(new Date(nextSession.starts_at))} ·{" "}
+                    {t(nextSession.study_format)}
+                  </p>
+                  {nextDetails?.meeting_details && (
+                    <p className="campus-session__location">
+                      {nextDetails.meeting_details}
+                    </p>
+                  )}
+                  {attending.length > 0 && (
+                    <div className="campus-session__attendees">
+                      <span
+                        className="campus-session__avatars"
+                        aria-hidden="true"
+                      >
+                        {attending.slice(0, 3).map((person) => (
+                          <span key={person.student_id}>
+                            {person.full_name
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((part) => part[0]?.toUpperCase())
+                              .join("")}
+                          </span>
+                        ))}
+                      </span>
+                      <span>
+                        {t("{count} attending", { count: attending.length })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Link href="/sessions" className="campus-session__action">
+                  {t("Open session")}{" "}
+                  <ArrowRight size={17} aria-hidden="true" />
                 </Link>
-              </li>
-            ))}
-          </ul>
-          <Link href="/messages" className="portal-card-footer">
-            {t("View all messages")} <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        </article>
-
-        <article className="portal-card">
-          <p className="academic-kicker">{t("Matched to your profile")}</p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <strong className="text-3xl font-bold tabular-nums text-primary">
-              {data.recommended_students.length}
-            </strong>
-            <span className="text-sm text-muted-foreground">
-              {t("study partners")}
-            </span>
+              </div>
+            </>
+          ) : (
+            <div className="campus-session__empty">
+              <h2 id="next-session-heading">
+                {t("No upcoming sessions yet.")}
+              </h2>
+              <p>{t("Make time to study together this week.")}</p>
+              <Link href="/sessions" className="campus-session__action">
+                {t("Plan a study session")}{" "}
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+        </section>
+        <section className="campus-partner" aria-labelledby="partner-heading">
+          <div className="campus-partner__mark">
+            <UsersRound size={23} aria-hidden="true" />
+          </div>
+          <p className="campus-kicker">{t("Study together")}</p>
+          <h2 id="partner-heading">{t("Find a study partner")}</h2>
+          <p>
+            {t(
+              "Find someone taking the same subjects and make the next session easier to start.",
+            )}
           </p>
-          <ul className="portal-list">
-            {data.recommended_students.slice(0, 2).map((student) => (
-              <li key={student.id}>
-                <Link
-                  href={`/profile/${student.id}`}
-                  className="portal-message-link"
-                >
-                  <span className="portal-student-avatar" aria-hidden="true">
+          {data.recommended_students.length > 0 && (
+            <p className="campus-partner__match">
+              {data.recommended_students.length === 1
+                ? t("1 student to meet")
+                : t("{count} students to meet", {
+                    count: data.recommended_students.length,
+                  })}
+            </p>
+          )}
+          {data.recommended_students.length > 0 && (
+            <div className="campus-partner__people">
+              {data.recommended_students.slice(0, 2).map((student) => (
+                <Link href={`/profile/${student.id}`} key={student.id}>
+                  <span aria-hidden="true">
                     {student.full_name.slice(0, 1).toUpperCase()}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {student.full_name}
-                  </span>
-                  <span className="text-xs font-semibold text-primary">
-                    {student.compatibility}%
-                  </span>
+                  {student.full_name}
+                  <ArrowRight size={14} aria-hidden="true" />
                 </Link>
-              </li>
-            ))}
-          </ul>
-          <Link href="/discover" className="portal-card-footer">
-            {t("Discover")} <ArrowRight size={14} aria-hidden="true" />
+              ))}
+            </div>
+          )}
+          <Link href="/discover" className="campus-button">
+            {t("Explore students")} <ArrowRight size={17} aria-hidden="true" />
           </Link>
-        </article>
-      </section>
+        </section>
+      </div>
 
-      <section className="profile-completion mt-5" data-motion>
-        <div className="flex items-center gap-3">
-          <StickyNote size={17} className="text-primary" aria-hidden="true" />
-          <p className="text-sm font-semibold">{t("Profile completion")}</p>
-          <span className="text-sm tabular-nums text-muted-foreground">
-            {data.profile_completion}%
-          </span>
+      <div className="campus-dashboard__columns">
+        <div className="campus-dashboard__main-column">
+          <section className="campus-section campus-groups">
+            <SectionHeading
+              title={t("My study groups")}
+              href="/groups"
+              linkLabel={t("View all groups")}
+            />
+            <div className="campus-groups__list">
+              {data.study_groups.length ? (
+                data.study_groups.slice(0, 3).map((group, index) => (
+                  <Link
+                    key={group.id}
+                    href={`/groups/${group.id}`}
+                    className="campus-group"
+                  >
+                    <span className="campus-group__number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="campus-group__body">
+                      <strong>{group.name}</strong>
+                      <span>{group.subject}</span>
+                    </span>
+                    <span className="campus-group__members">
+                      <UsersRound size={14} aria-hidden="true" />
+                      {t("{count} members", { count: group.member_count })}
+                    </span>
+                    <ArrowRight size={17} aria-hidden="true" />
+                  </Link>
+                ))
+              ) : (
+                <div className="campus-empty">
+                  <p>{t("You have not joined a study group yet.")}</p>
+                  <Link href="/groups" className="campus-text-link">
+                    {t("Browse study groups")}{" "}
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+          <section className="campus-section campus-timetable">
+            <SectionHeading
+              title={t("Your schedule")}
+              href="/sessions"
+              linkLabel={t("Full schedule")}
+            />
+            <div className="campus-timetable__list">
+              {sessions.length ? (
+                sessions.slice(0, 4).map((session) => (
+                  <Link
+                    href="/sessions"
+                    key={session.id}
+                    className="campus-timetable__row"
+                  >
+                    <time dateTime={session.starts_at}>
+                      <strong>
+                        {sessionTime.format(new Date(session.starts_at))}
+                      </strong>
+                      <span>
+                        {sessionDate.format(new Date(session.starts_at))}
+                      </span>
+                    </time>
+                    <span className="campus-timetable__detail">
+                      <strong>{session.topic || session.subject}</strong>
+                      <span>{session.subject}</span>
+                    </span>
+                    <span className="campus-timetable__format">
+                      {t(session.study_format)}
+                    </span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                ))
+              ) : (
+                <div className="campus-empty">
+                  <p>{t("Your timetable is clear for now.")}</p>
+                  <Link href="/sessions" className="campus-text-link">
+                    {t("Schedule session")}{" "}
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-        <div className="portal-progress-track flex-1" aria-hidden="true">
-          <span style={{ width: `${data.profile_completion}%` }} />
+        <div className="campus-dashboard__side-column">
+          <section className="campus-section campus-tasks">
+            <SectionHeading
+              title={t("Coming up")}
+              href="/groups"
+              linkLabel={t("All tasks")}
+            />
+            {taskError && (
+              <p role="status" className="campus-task-error">
+                {t("Some group tasks could not be loaded.")}
+              </p>
+            )}
+            {tasks.length ? (
+              <ul>
+                {tasks.slice(0, 4).map((task) => (
+                  <li key={task.id}>
+                    <Link
+                      href={`/groups/${task.group_id}`}
+                      className="campus-task"
+                    >
+                      <span className="campus-task__box" aria-hidden="true" />
+                      <span>
+                        <strong>{task.title}</strong>
+                        <small>
+                          {task.subject || task.group_name}
+                          {task.due_at
+                            ? ` · ${new Intl.DateTimeFormat(intlLocale, { month: "short", day: "numeric" }).format(new Date(task.due_at))}`
+                            : ""}
+                        </small>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="campus-empty">
+                {t("No group tasks due right now.")}
+              </p>
+            )}
+          </section>
+          <section className="campus-section campus-quick">
+            <h2>{t("Make a move")}</h2>
+            <Link href="/groups" className="campus-quick__link">
+              <Plus size={17} aria-hidden="true" />
+              {t("Create a study group")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href="/sessions" className="campus-quick__link">
+              <CalendarDays size={17} aria-hidden="true" />
+              {t("Plan a study session")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href="/notes" className="campus-quick__link">
+              <FileText size={17} aria-hidden="true" />
+              {t("Add a study note")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href="/materials" className="campus-quick__link">
+              <BookOpen size={17} aria-hidden="true" />
+              {t("Share a material")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </section>
+          {target > 0 && (
+            <section className="campus-section campus-goal">
+              <div className="campus-section__heading">
+                <h2>{t("This week")}</h2>
+                <Link href="/progress" className="campus-text-link">
+                  {t("Study goals")} <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
+              <p>
+                <strong>{completed}</strong> / {target}{" "}
+                {t("sessions toward your goal")}
+              </p>
+              <div
+                className="campus-goal__track"
+                role="progressbar"
+                aria-valuenow={Math.min(completed, target)}
+                aria-valuemin={0}
+                aria-valuemax={target}
+                aria-label={t("Weekly study goal")}
+              >
+                <span
+                  style={{
+                    width: `${Math.min(100, (completed / target) * 100)}%`,
+                  }}
+                />
+              </div>
+            </section>
+          )}
+          <section className="campus-section campus-profile-progress">
+            <div className="campus-section__heading">
+              <h2>{t("Profile completion")}</h2>
+              <Link href="/settings/profile" className="campus-text-link">
+                {t("Update your profile")}{" "}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="campus-profile-progress__row">
+              <strong>{data.profile_completion}%</strong>
+              <div
+                className="campus-goal__track"
+                role="progressbar"
+                aria-valuenow={data.profile_completion}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={t("Profile completion")}
+              >
+                <span style={{ width: `${data.profile_completion}%` }} />
+              </div>
+            </div>
+          </section>
         </div>
-        <Link href="/settings/profile" className="portal-inline-link shrink-0">
-          <TrendingUp size={14} aria-hidden="true" />
-          {t("Update your profile")}
-        </Link>
-      </section>
-
-      <Link href="/discover" className="portal-inline-link mt-5 inline-flex">
-        <UserRoundPlus size={14} aria-hidden="true" />
-        {t("Find more study partners")}
-      </Link>
+      </div>
+      <div className="campus-dashboard__foot">
+        <section className="campus-section">
+          <SectionHeading
+            title={t("My notes")}
+            href="/notes"
+            linkLabel={t("Open notes")}
+          />
+          <div className="campus-foot-list">
+            {notes.length ? (
+              notes.slice(0, 2).map((note) => (
+                <Link key={note.id} href="/notes">
+                  <BookOpen size={17} aria-hidden="true" />
+                  <span>{note.title}</span>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              ))
+            ) : (
+              <p className="campus-empty">
+                {t("Write down key ideas before your next session.")}
+              </p>
+            )}
+          </div>
+        </section>
+        <section className="campus-section">
+          <SectionHeading
+            title={t("Conversations")}
+            href="/messages"
+            linkLabel={t("View all messages")}
+          />
+          <div className="campus-foot-list">
+            {data.recent_conversations.length ? (
+              data.recent_conversations.slice(0, 2).map((conversation) => (
+                <Link
+                  key={conversation.id}
+                  href={`/messages/${conversation.id}`}
+                >
+                  <MessageCircle size={17} aria-hidden="true" />
+                  <span>{conversation.title}</span>
+                  {conversation.unread_count > 0 && (
+                    <b>{conversation.unread_count}</b>
+                  )}
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              ))
+            ) : (
+              <p className="campus-empty">{t("No conversations yet.")}</p>
+            )}
+          </div>
+          {unreadMessages > 0 && (
+            <p className="campus-foot-note">
+              {t("{count} unread messages", { count: unreadMessages })}
+            </p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
