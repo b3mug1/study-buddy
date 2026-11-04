@@ -1242,17 +1242,32 @@ class RpcQuery:
                     "Invitees must be unique and cannot include the organizer.",
                     "P0001",
                 )
+            for invitee in sorted(invitees):
+                first, second = sorted((owner_id, invitee))
+                connection.execute(
+                    "select pg_advisory_xact_lock(hashtextextended(%s,0))",
+                    (f"student-block:{first}:{second}",),
+                )
             connected = {
                 row["student_id"]
                 for row in connection.execute(
                     """select case when requester_id=%s then addressee_id else requester_id end
                        as student_id from connections where status='accepted'
-                       and (requester_id=%s or addressee_id=%s)""",
-                    (owner_id, owner_id, owner_id),
+                       and (requester_id=%s or addressee_id=%s)
+                       and not exists (
+                         select 1 from blocked_users b
+                         where (b.blocker_id=%s and b.blocked_id=case
+                           when requester_id=%s then addressee_id else requester_id end)
+                            or (b.blocked_id=%s and b.blocker_id=case
+                           when requester_id=%s then addressee_id else requester_id end)
+                       )""",
+                    (owner_id, owner_id, owner_id, owner_id, owner_id, owner_id, owner_id),
                 ).fetchall()
             }
             if not set(invitees).issubset(connected):
-                raise DatabaseError("Study session invitees must be connected students.", "P0001")
+                raise DatabaseError(
+                    "Study session invitees must be connected and not blocked.", "P0001"
+                )
             session_id = connection.execute(
                 """insert into study_sessions
                    (owner_id,subject,topic,starts_at,duration_minutes,study_format,
@@ -1312,6 +1327,14 @@ class RpcQuery:
                     "P0001",
                 )
             if accept:
+                blocked = connection.execute(
+                    """select 1 from blocked_users
+                       where (blocker_id=%s and blocked_id=%s)
+                          or (blocker_id=%s and blocked_id=%s)""",
+                    (user_id, session["owner_id"], session["owner_id"], user_id),
+                ).fetchone()
+                if blocked:
+                    raise DatabaseError("This invitation is no longer available.", "P0001")
                 count = connection.execute(
                     """select count(*) as count from session_participants
                        where session_id=%s and status='accepted'""",

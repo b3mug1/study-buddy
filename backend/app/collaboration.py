@@ -24,6 +24,9 @@ from app.schemas import (
 router = APIRouter(prefix="/api/v1", tags=["study collaboration"])
 logger = logging.getLogger(__name__)
 FILE_LIMIT = 5 * 1024 * 1024
+GROUP_FILE_QUOTA = 100 * 1024 * 1024
+USER_FILE_QUOTA = 250 * 1024 * 1024
+MATERIALS_PER_HOUR = 30
 ALLOWED_FILE_TYPES = {
     ".pdf": "application/pdf",
     ".txt": "text/plain",
@@ -297,6 +300,44 @@ async def create_group_material(
     try:
         with database_connection(user.id) as connection:
             _require_group_member(connection, group_id, UUID(user.id))
+            connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended(%s,0))",
+                (f"user-materials:{user.id}",),
+            )
+            connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended(%s,0))",
+                (f"group-materials:{group_id}",),
+            )
+            recent_count = connection.execute(
+                """select count(*) as count from group_materials
+                   where created_by=%s and created_at>now()-interval '1 hour'""",
+                (UUID(user.id),),
+            ).fetchone()["count"]
+            if recent_count >= MATERIALS_PER_HOUR:
+                raise HTTPException(
+                    status_code=429, detail="Too many materials added. Try again later."
+                )
+            if file_data is not None:
+                group_bytes = connection.execute(
+                    """select coalesce(sum(octet_length(file_data)),0) as bytes
+                       from group_materials where group_id=%s""",
+                    (group_id,),
+                ).fetchone()["bytes"]
+                user_bytes = connection.execute(
+                    """select coalesce(sum(octet_length(file_data)),0) as bytes
+                       from group_materials where created_by=%s""",
+                    (UUID(user.id),),
+                ).fetchone()["bytes"]
+                if group_bytes + len(file_data) > GROUP_FILE_QUOTA:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="This study group has reached its 100 MB file quota.",
+                    )
+                if user_bytes + len(file_data) > USER_FILE_QUOTA:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="You have reached your 250 MB shared file quota.",
+                    )
             row = connection.execute(
                 """insert into group_materials
                    (group_id,created_by,title,description,source_url,file_name,mime_type,file_data)
@@ -689,6 +730,11 @@ def block_user(block: UserBlockCreate, user: CurrentUser) -> dict[str, str]:
         raise HTTPException(status_code=422, detail="You cannot block your own account.")
     try:
         with database_connection(user.id) as connection:
+            first, second = sorted((user_id, block.student_id))
+            connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended(%s,0))",
+                (f"student-block:{first}:{second}",),
+            )
             target = connection.execute(
                 "select id from profiles where id=%s",
                 (block.student_id,),
@@ -699,6 +745,15 @@ def block_user(block: UserBlockCreate, user: CurrentUser) -> dict[str, str]:
                 "insert into blocked_users(blocker_id,blocked_id) values (%s,%s) "
                 "on conflict do nothing",
                 (user_id, block.student_id),
+            )
+            connection.execute(
+                """update session_participants sp set status='declined',responded_at=now()
+                   from study_sessions s
+                   where s.id=sp.session_id and s.status='scheduled'
+                     and sp.status='invited'
+                     and ((s.owner_id=%s and sp.student_id=%s)
+                       or (s.owner_id=%s and sp.student_id=%s))""",
+                (user_id, block.student_id, block.student_id, user_id),
             )
         return {"student_id": str(block.student_id)}
     except DatabaseError as error:
