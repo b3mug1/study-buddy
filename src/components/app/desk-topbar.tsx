@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   BookOpen,
+  Bell,
   CalendarDays,
   ChevronDown,
-  EllipsisVertical,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -156,6 +156,7 @@ export function DeskTopbar({
   onToggleRail,
   onSignOut,
   signingOut,
+  unreadNotifications,
 }: {
   fullName: string;
   university: string;
@@ -164,6 +165,7 @@ export function DeskTopbar({
   onToggleRail: () => void;
   onSignOut: () => void;
   signingOut: boolean;
+  unreadNotifications: number;
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -201,12 +203,25 @@ export function DeskTopbar({
 
       <DeskSearch
         entries={entries}
-        placeholder={t("Search your study space")}
+        placeholder={t("Search")}
         hint={t("Search results")}
         emptyLabel={t("No matching pages, sessions, or notes.")}
       />
 
       <div className="desk-topbar__spacer" />
+
+      <Link
+        href="/notifications"
+        className="desk-icon-button desk-notifications"
+        aria-label={t("Notifications")}
+      >
+        <Bell size={18} aria-hidden="true" />
+        {unreadNotifications > 0 && (
+          <span className="desk-notifications__count">
+            {unreadNotifications}
+          </span>
+        )}
+      </Link>
 
       <Link
         href="/groups"
@@ -228,7 +243,7 @@ export function DeskTopbar({
           className="desk-account__trigger"
         >
           <span className="desk-account__avatar" aria-hidden="true">
-            {initials || "SB"}
+            {initials || "?"}
           </span>
           <span className="desk-account__text">
             <span className="desk-account__name">{fullName}</span>
@@ -290,15 +305,6 @@ export function DeskTopbar({
           </div>
         )}
       </div>
-
-      <button
-        type="button"
-        aria-label={t("Open menu")}
-        onClick={onToggleRail}
-        className="desk-icon-button desk-icon-button--plain desk-rail-toggle"
-      >
-        <EllipsisVertical size={18} aria-hidden="true" />
-      </button>
     </header>
   );
 }
