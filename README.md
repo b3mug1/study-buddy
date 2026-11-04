@@ -26,7 +26,7 @@ All database access is through the FastAPI service. Database values are paramete
 
 ## Database model and migrations
 
-[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks. [`migrations/003_intro_message_limits.sql`](./migrations/003_intro_message_limits.sql) adds the counter used to enforce the three-message chat-request limit.
+[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks. [`migrations/003_intro_message_limits.sql`](./migrations/003_intro_message_limits.sql) adds the counter used to enforce the three-message chat-request limit. [`migrations/004_require_email_verification.sql`](./migrations/004_require_email_verification.sql) marks accounts created without mailbox proof as pending and revokes their sessions. Configure SMTP before applying it to an existing database.
 
 Apply the migration once to an empty PostgreSQL database:
 
@@ -35,12 +35,13 @@ $env:DATABASE_URL = "postgresql://study_buddy:your-password@localhost:5432/study
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\001_initial.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\002_collaboration_features.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\003_intro_message_limits.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\004_require_email_verification.sql
 ```
 
 If the database already exists, apply each migration it is missing in numerical order, once. Existing PostgreSQL Docker volumes do not rerun `/docker-entrypoint-initdb.d` scripts automatically. For the Compose database, for example:
 
 ```powershell
-docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/003_intro_message_limits.sql
+docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/004_require_email_verification.sql
 ```
 
 For production, run migrations with a migration/owner role, run FastAPI with a separate restricted role, allow that role only the required table/sequence/function privileges, and restrict incoming database connections to the API host.
@@ -52,10 +53,10 @@ FastAPI API routes are under `/api/v1`. Protected routes use a bearer access tok
 | Method                           | Path                                                     | Purpose                                                  |
 | -------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
 | `GET`                            | `/health`                                                | Liveness                                                 |
-| `POST`                           | `/api/v1/auth/register`                                  | Create an account and issue an access session            |
+| `POST`                           | `/api/v1/auth/register`                                  | Create a pending account and send an email verification link |
 | `POST`                           | `/api/v1/auth/login`                                     | Verify credentials and issue access/refresh tokens       |
 | `POST`                           | `/api/v1/auth/verify-email`                              | Redeem a previously issued email token                   |
-| `POST`                           | `/api/v1/auth/forgot-password`                           | Disabled; returns `501` because outbound email is off    |
+| `POST`                           | `/api/v1/auth/forgot-password`                           | Disabled; password recovery is not implemented           |
 | `POST`                           | `/api/v1/auth/reset-password`                            | Redeem a previously issued password-reset token          |
 | `POST`                           | `/api/v1/auth/refresh`                                   | Exchange a persisted refresh session for an access token |
 | `POST`                           | `/api/v1/auth/logout`                                    | Revoke a refresh session                                 |
@@ -167,6 +168,12 @@ e2e/                      Playwright UI/API smoke tests
    VITE_API_URL=http://localhost:8000
    FRONTEND_URL=http://localhost:1000
    CORS_ORIGINS=["http://localhost:1000","http://127.0.0.1:1000"]
+   SMTP_HOST=your-smtp-host
+   SMTP_PORT=587
+   SMTP_USERNAME=your-smtp-user
+   SMTP_PASSWORD=your-smtp-password
+   SMTP_FROM=your-verified-sender@example.com
+   SMTP_USE_TLS=true
    ```
 
    `DATABASE_URL`, `JWT_SECRET_KEY`, and `API_URL` are server-only. Do not prefix them with `VITE_`.
@@ -178,7 +185,7 @@ e2e/                      Playwright UI/API smoke tests
    npm run dev
    ```
 
-6. Open `http://localhost:1000`. Registration creates the account and signs the student in immediately.
+6. Open `http://localhost:1000`. Registration sends a verification link to the student's university inbox. The student receives a session only after opening that link.
 
 Registration accepts student addresses in the form `123456@astanait.edu.kz`, where the local part is exactly six digits. The app checks the address format but does not verify that the student owns the mailbox. Email-based password recovery is disabled.
 
@@ -199,12 +206,13 @@ Unit/API tests cover profile validation, match-score calculations, and rejection
 
 ## Deployment and operational security
 
-Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and `FRONTEND_URL` on the Express server, `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time, and set `DATABASE_URL`, `JWT_SECRET_KEY`, and CORS origins on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
+Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and the exact `FRONTEND_URL` on the Express server. Set the same `FRONTEND_URL`, exact `CORS_ORIGINS`, and SMTP settings (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, optional `SMTP_USERNAME` and `SMTP_PASSWORD`, `SMTP_USE_TLS`) on FastAPI so students can verify their email before receiving a session. Set `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time, and set `DATABASE_URL` and `JWT_SECRET_KEY` on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
 
 ## Current limitations
 
 - PostgreSQL must be provisioned and the migration applied before persistent routes work.
 - Messages use PostgreSQL `LISTEN/NOTIFY` over ticket-authorized WebSockets, with a polling fallback when the WebSocket endpoint is not reachable.
-- Email ownership checks and email-based password recovery are unavailable without an outbound mail service.
+- Email verification requires a configured SMTP service; password recovery is not implemented.
+- WebSocket connection caps apply per API process. Size them against the number of API workers and PostgreSQL connection capacity.
 - A private PostgreSQL deployment is an external setup requirement.
 - Avatar upload, calendar provider integrations, and authenticated database-backed E2E fixtures are not included.

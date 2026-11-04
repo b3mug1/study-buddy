@@ -281,7 +281,6 @@ export function LoginForm({
 
 export function RegisterForm() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -299,7 +298,7 @@ export function RegisterForm() {
         email,
         password,
       });
-      navigate("/onboarding", { replace: true });
+      setMessage({ text: "Check your university email for a verification link before signing in.", tone: "success" });
     } catch (error) {
       setMessage({
         text:
