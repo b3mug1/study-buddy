@@ -85,6 +85,11 @@ const NotesPage = lazy(() =>
     default: module.NotesPage,
   })),
 );
+const MaterialsPage = lazy(() =>
+  import("@/components/workspace/materials-page").then((module) => ({
+    default: module.MaterialsPage,
+  })),
+);
 const DiscoverPage = lazy(() =>
   import("@/components/workspace/discover-page").then((module) => ({
     default: module.DiscoverPage,
@@ -174,6 +179,7 @@ function RouteTitle() {
               "/auth/verify": "Verify your email",
               "/onboarding": "Set up your profile",
               "/dashboard": "Overview",
+              "/materials": "Shared materials",
               "/my-profile": "My profile",
               "/discover": "Discover students",
               "/connections": "Connections",
@@ -390,7 +396,7 @@ function NotFoundRoute() {
   const { t } = useI18n();
   return (
     <main className="mx-auto max-w-3xl px-5 py-20 text-center">
-      <p className="academic-kicker">404</p>
+      <p className="text-sm font-semibold text-muted-foreground">404</p>
       <h1 className="mt-3 text-4xl">{t("Page not found")}</h1>
       <p className="mt-3 text-muted-foreground">
         {t("The page you requested does not exist.")}
@@ -418,6 +424,7 @@ export function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardView />} />
             <Route path="/notes" element={<NotesPage />} />
+            <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/my-profile" element={<MyProfilePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
