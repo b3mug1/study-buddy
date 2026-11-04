@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import { toast } from "sonner";
 import {
   authenticatedApiJson,
@@ -45,6 +46,7 @@ export function GroupCollaborationPanel({
   currentUserId: string;
 }) {
   const { t, locale } = useI18n();
+  const { hash } = useLocation();
   const intlLocale =
     locale === "ru" ? "ru-RU" : locale === "kk" ? "kk-KZ" : "en-US";
   const [tasks, setTasks] = useState<GroupTask[]>([]);
@@ -54,6 +56,16 @@ export function GroupCollaborationPanel({
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (hash !== "#shared-materials") return;
+    const frame = requestAnimationFrame(() => {
+      const section = document.getElementById("shared-materials");
+      section?.scrollIntoView({ block: "start" });
+      section?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash]);
 
   const loadGroupContent = useCallback(async () => {
     try {
@@ -479,7 +491,11 @@ export function GroupCollaborationPanel({
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="surface p-5 sm:p-6">
+        <section
+          id="shared-materials"
+          tabIndex={-1}
+          className="surface scroll-mt-24 p-5 sm:p-6"
+        >
           <div className="flex items-start gap-3">
             <span className="grid size-10 place-items-center rounded-md bg-accent text-accent-foreground dark:bg-accent ">
               <BookOpenText size={19} aria-hidden="true" />

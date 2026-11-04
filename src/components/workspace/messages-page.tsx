@@ -772,7 +772,7 @@ export function StartConversationPage({ studentId }: { studentId: string }) {
             <MessageSquareText size={20} aria-hidden="true" />
           </span>
           <div>
-            <p className="academic-kicker">{t("A first hello")}</p>
+            <p className="text-sm font-semibold text-muted-foreground">{t("A first hello")}</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               {student
                 ? t("Message {name}", { name: student.full_name })
