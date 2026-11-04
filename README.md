@@ -214,5 +214,6 @@ Deploy the React static build with the Express API proxy and FastAPI to trusted 
 - Messages use PostgreSQL `LISTEN/NOTIFY` over ticket-authorized WebSockets, with a polling fallback when the WebSocket endpoint is not reachable.
 - Email verification requires a configured SMTP service; password recovery is not implemented.
 - WebSocket connection caps apply per API process. Size them against the number of API workers and PostgreSQL connection capacity.
+- Shared materials are limited to 5 MB per file, 6 MB per request, 100 MB per group, 250 MB per uploader, and 30 new materials per uploader per hour.
 - A private PostgreSQL deployment is an external setup requirement.
 - Avatar upload, calendar provider integrations, and authenticated database-backed E2E fixtures are not included.
