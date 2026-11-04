@@ -57,7 +57,7 @@ export function MyProfilePage() {
     <main className="my-profile-page mx-auto max-w-5xl">
       <header className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="academic-kicker">{profile.university_name}</p>
+          <p className="text-sm text-muted-foreground">{profile.university_name}</p>
           <h1 className="mt-2 text-4xl">{t("My profile")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("View your academic information and study preferences.")}

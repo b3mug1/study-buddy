@@ -12,7 +12,7 @@ export function ProfileSettingsFrame({
   const { t } = useI18n();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="profile-settings-page mx-auto max-w-3xl px-5 py-10 sm:px-8">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary"
@@ -20,7 +20,7 @@ export function ProfileSettingsFrame({
         <ArrowLeft size={16} aria-hidden="true" /> {t("Back to overview")}
       </Link>
       <div className="mt-6">
-        <p className="academic-kicker">{t("Your account")}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{t("Your account")}</p>
         <h1 className="mt-2 text-4xl">{t("Edit your study profile")}</h1>
         <p className="mt-3 text-muted-foreground">
           {t("Keep your profile and study preferences up to date.")}
