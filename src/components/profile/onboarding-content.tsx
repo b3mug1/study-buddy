@@ -19,7 +19,7 @@ export function OnboardingContent({ children }: { children: React.ReactNode }) {
       </header>
       <div className="mx-auto grid max-w-7xl gap-12 px-5 pb-14 pt-6 sm:px-8 lg:grid-cols-[0.72fr_1fr] lg:pt-14">
         <section className="max-w-md">
-          <p className="academic-kicker">{t("Your student profile")}</p>
+          <p className="text-sm font-semibold text-muted-foreground">{t("Your student profile")}</p>
           <h1 className="mt-3 text-4xl leading-tight">
             {t("Let’s make this semester more connected.")}
           </h1>
