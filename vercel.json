@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "env": {
+    "FRONTEND_URL": "https://study.b3mug1.dev",
+    "API_URL": "https://study-buddy-ovkj.onrender.com"
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",

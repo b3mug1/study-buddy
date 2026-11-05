@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: study-buddy-api
+    name: study-buddy
     env: docker
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
@@ -12,9 +12,9 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        sync: false
+        value: '["https://study.b3mug1.dev"]'
       - key: FRONTEND_URL
-        sync: false
+        value: https://study.b3mug1.dev
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

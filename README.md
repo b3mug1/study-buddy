@@ -208,6 +208,8 @@ Unit/API tests cover profile validation, match-score calculations, and rejection
 
 Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and the exact `FRONTEND_URL` on the Express server. Set the same `FRONTEND_URL`, exact `CORS_ORIGINS`, and SMTP settings (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, optional `SMTP_USERNAME` and `SMTP_PASSWORD`, `SMTP_USE_TLS`) on FastAPI so students can verify their email before receiving a session. Set `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time, and set `DATABASE_URL` and `JWT_SECRET_KEY` on FastAPI. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
 
+For the `study.b3mug1.dev` deployment, `vercel.json` configures the proxy's `FRONTEND_URL` and `API_URL`, and `.env.production` configures the browser's `VITE_API_URL`. Check the Vercel project's Production environment variables for overrides, then redeploy so the new build includes the Render API URL. The Render service named `study-buddy` needs `FRONTEND_URL=https://study.b3mug1.dev` and `CORS_ORIGINS=["https://study.b3mug1.dev"]`. These values are in `render.yaml` for Blueprint-managed services; for a standalone service, set them in Render's Environment page and deploy the service. An old Vercel deployment or an unsynced Render service will continue using its previous values.
+
 ## Current limitations
 
 - PostgreSQL must be provisioned and the migration applied before persistent routes work.
