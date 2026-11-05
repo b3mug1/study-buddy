@@ -225,7 +225,7 @@ export function GroupsPage() {
             aria-hidden="true"
           />
           <input
-            className="field-control pl-9"
+            className="field-control field-control--leading-icon"
             placeholder={t("Search group names")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
