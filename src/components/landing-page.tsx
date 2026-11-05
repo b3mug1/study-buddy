@@ -8,10 +8,12 @@ import {
   MessageCircle,
   UsersRound,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "@/components/navigation/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotebookMark } from "@/components/notebook-mark";
+import { ApiRequestError, authenticatedApiJson } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 
 function StudyScene({ title }: { title: string }) {
@@ -164,6 +166,30 @@ const features = [
 
 export function LandingPage() {
   const { t } = useI18n();
+  const [sessionStatus, setSessionStatus] = useState<
+    "checking" | "guest" | "authenticated" | "unavailable"
+  >("checking");
+
+  useEffect(() => {
+    let active = true;
+    void authenticatedApiJson<{ id: string }>("auth/me")
+      .then(() => {
+        if (active) setSessionStatus("authenticated");
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setSessionStatus(
+          error instanceof ApiRequestError && error.status === 401
+            ? "guest"
+            : "unavailable",
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const isAuthenticated = sessionStatus === "authenticated";
   return (
     <main className="landing-page doodle-landing min-h-screen bg-background text-foreground">
       <header className="landing-header doodle-header">
@@ -183,13 +209,22 @@ export function LandingPage() {
           <div className="doodle-header__actions">
             <LanguageSwitcher compact />
             <ThemeToggle />
-            <Link href="/login" className="doodle-login">
-              {t("Sign in")}
-            </Link>
-            <Link href="/register" className="landing-header-cta">
-              {t("Get started")}
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="landing-header-cta">
+                {t("Dashboard")}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            ) : sessionStatus === "guest" ? (
+              <>
+                <Link href="/login" className="doodle-login">
+                  {t("Sign in")}
+                </Link>
+                <Link href="/register" className="landing-header-cta">
+                  {t("Get started")}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
@@ -210,7 +245,10 @@ export function LandingPage() {
             )}
           </p>
           <div className="doodle-hero__actions">
-            <Link href="/register" className="landing-primary-cta">
+            <Link
+              href={isAuthenticated ? "/discover" : "/register"}
+              className="landing-primary-cta"
+            >
               {t("Find your study buddy")}
               <ArrowRight size={19} aria-hidden="true" />
             </Link>
@@ -333,8 +371,11 @@ export function LandingPage() {
                 "Find a partner, see what your group is working on, and keep your next session in view.",
               )}
             </p>
-            <Link href="/register" className="landing-primary-cta">
-              {t("Join the community")}
+            <Link
+              href={isAuthenticated ? "/dashboard" : "/register"}
+              className="landing-primary-cta"
+            >
+              {t(isAuthenticated ? "Dashboard" : "Join the community")}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
           </div>
@@ -409,8 +450,11 @@ export function LandingPage() {
           <span className="doodle-section-index">{t("A note for you")}</span>
           <h2>{t("Your next study buddy is waiting!")}</h2>
           <p>{t("Good ideas grow when we share them.")}</p>
-          <Link href="/register" className="landing-primary-cta">
-            {t("Let's get started")}
+          <Link
+            href={isAuthenticated ? "/dashboard" : "/register"}
+            className="landing-primary-cta"
+          >
+            {t(isAuthenticated ? "Dashboard" : "Let's get started")}
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>

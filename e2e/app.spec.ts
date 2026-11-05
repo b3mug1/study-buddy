@@ -1,9 +1,15 @@
 import { expect, test } from "@playwright/test";
 
 test("landing page exposes the main Study Buddy actions", async ({ page }) => {
+  await page.route("**/api/backend/api/v1/auth/me", (route) =>
+    route.fulfill({ status: 401, contentType: "application/json", body: "{}" }),
+  );
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { level: 1, name: /find your people/i }),
+    page.getByRole("heading", {
+      level: 1,
+      name: /studying is better together/i,
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /get started/i }).first(),
@@ -11,6 +17,33 @@ test("landing page exposes the main Study Buddy actions", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: /sign in/i }).first(),
   ).toHaveAttribute("href", "/login");
+});
+
+test("landing page shows the dashboard instead of guest actions after sign-in", async ({
+  page,
+}) => {
+  await page.route("**/api/backend/api/v1/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ id: "student-1" }),
+    }),
+  );
+  await page.goto("/");
+
+  const headerActions = page.locator(".doodle-header__actions");
+  await expect(
+    headerActions.getByRole("link", { name: "Dashboard" }),
+  ).toHaveAttribute("href", "/dashboard");
+  await expect(
+    headerActions.getByRole("link", { name: "Sign in" }),
+  ).toHaveCount(0);
+  await expect(
+    headerActions.getByRole("link", { name: "Get started" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Find your study buddy", exact: true }),
+  ).toHaveAttribute("href", "/discover");
 });
 
 test("landing page fits a narrow mobile viewport without horizontal scrolling", async ({
