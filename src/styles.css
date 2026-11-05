@@ -3802,3 +3802,1049 @@ h2,
     break-inside: avoid;
   }
 }
+
+/* ==========================================================================
+   11. LIVING NOTEBOOK
+   Shared visual language for public pages and the existing application.
+   ========================================================================== */
+
+:root {
+  --background: #fffdf5;
+  --foreground: #292929;
+  --card: #ffffff;
+  --card-foreground: #292929;
+  --popover: #ffffff;
+  --popover-foreground: #292929;
+  --primary: #ff8066;
+  --primary-hover: #f36c51;
+  --primary-foreground: #292929;
+  --brand-accent: #ff8066;
+  --secondary: #fff0c7;
+  --secondary-foreground: #292929;
+  --muted: #f6f1e6;
+  --muted-foreground: #55534e;
+  --accent: #d5efe1;
+  --accent-foreground: #244c3b;
+  --sky: #a9d8f3;
+  --border: #b9b5aa;
+  --input: #77736c;
+  --ring: #ad4a34;
+  --success: #23664b;
+  --warning: #85510b;
+  --info: #285c77;
+  --link-ink: #a83b26;
+  --radius-sharp: 0.85rem;
+  --radius: 1.2rem;
+  --shadow-soft: 3px 4px 0 rgb(41 41 41 / 0.09);
+  --font-sans-stack: Nunito, "Segoe UI", system-ui, sans-serif;
+  --font-display-stack: Fredoka, Nunito, system-ui, sans-serif;
+}
+
+.dark {
+  --background: #242526;
+  --foreground: #f9f5ea;
+  --card: #303235;
+  --card-foreground: #f9f5ea;
+  --popover: #303235;
+  --popover-foreground: #f9f5ea;
+  --primary: #ff9a81;
+  --primary-hover: #ffb39f;
+  --primary-foreground: #292929;
+  --brand-accent: #ff9a81;
+  --secondary: #514733;
+  --secondary-foreground: #f9f5ea;
+  --muted: #393b3d;
+  --muted-foreground: #d0cbc0;
+  --accent: #365346;
+  --accent-foreground: #e5f5eb;
+  --sky: #426b80;
+  --border: #777974;
+  --input: #aaa9a0;
+  --ring: #ffb39f;
+  --success: #a8dcc4;
+  --warning: #ffd76a;
+  --info: #a9d8f3;
+  --link-ink: #ffc2b3;
+}
+
+@theme inline {
+  --font-sans: Nunito, "Segoe UI", system-ui, sans-serif;
+  --font-serif: Fredoka, Nunito, system-ui, sans-serif;
+}
+
+body {
+  letter-spacing: 0;
+}
+h1,
+h2,
+.brand-name,
+.dashboard-page h1,
+.dashboard-page h2 {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+h3,
+h4 {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+}
+
+.surface,
+.portal-card,
+.dashboard-card,
+.profile-completion,
+.desk-card,
+.auth-card {
+  border: 1.5px solid var(--border);
+  border-radius: 19px 16px 20px 17px;
+  box-shadow: var(--shadow-soft);
+}
+.field-control,
+.desk-search,
+.desk-icon-button,
+.desk-account__trigger {
+  border-radius: 12px 14px 11px 13px;
+}
+.badge,
+.portal-count,
+.portal-unread-count,
+.desk-task__badge,
+.desk-filter {
+  border-radius: 9px 11px 8px 10px;
+}
+.btn,
+.landing-header-cta,
+.landing-primary-cta,
+.portal-button,
+.desk-create,
+.desk-button {
+  border: 2px solid var(--foreground);
+  border-radius: 13px 16px 12px 15px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 3px 3px 0 var(--foreground);
+  font-weight: 800;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+.btn:hover,
+.landing-header-cta:hover,
+.landing-primary-cta:hover,
+.portal-button:hover,
+.desk-create:hover,
+.desk-button:hover {
+  border-color: var(--foreground);
+  background: var(--primary-hover);
+  box-shadow: 4px 5px 0 var(--foreground);
+  transform: translate(-1px, -2px);
+}
+.btn:active,
+.landing-header-cta:active,
+.landing-primary-cta:active,
+.portal-button:active,
+.desk-create:active,
+.desk-button:active {
+  box-shadow: 1px 1px 0 var(--foreground);
+  transform: translate(2px, 2px);
+}
+.btn--ghost,
+.landing-secondary-cta {
+  color: var(--foreground);
+}
+.btn--ghost {
+  background: transparent;
+  box-shadow: none;
+}
+.campus-text-link,
+.portal-inline-link,
+.portal-card-footer,
+.campus-group__number,
+.campus-timetable__format,
+.campus-partner__match,
+.campus-kicker,
+.landing-secondary-cta:hover,
+a.text-primary {
+  color: var(--link-ink);
+}
+.text-primary {
+  color: var(--link-ink);
+}
+.desk-body button[class~="bg-primary"],
+.desk-body a[class~="bg-primary"] {
+  border: 1.5px solid var(--foreground);
+  border-radius: 10px 12px 9px 11px;
+  box-shadow: 2px 3px 0 var(--foreground);
+  font-weight: 800;
+}
+.desk-body button[class~="bg-primary"]:hover:not(:disabled),
+.desk-body a[class~="bg-primary"]:hover {
+  box-shadow: 3px 4px 0 var(--foreground);
+  transform: translate(-1px, -1px);
+}
+
+/* Public notebook */
+.doodle-landing {
+  overflow-x: clip;
+}
+.doodle-container {
+  width: min(100% - 3rem, 1210px);
+  margin-inline: auto;
+}
+.doodle-header {
+  background: var(--background);
+  border-bottom: 1.5px solid var(--foreground);
+}
+.doodle-header__inner {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.doodle-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  color: var(--foreground);
+  font: 600 1.45rem/1 var(--font-display-stack);
+  white-space: nowrap;
+}
+.notebook-mark {
+  width: 39px;
+  height: 39px;
+  flex: none;
+  color: #292929;
+}
+.doodle-brand__dot {
+  color: var(--primary-hover);
+}
+.doodle-nav,
+.doodle-header__actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.7rem, 2vw, 2rem);
+}
+.doodle-nav a,
+.doodle-login {
+  color: var(--foreground);
+  font-weight: 800;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.doodle-nav a:hover,
+.doodle-login:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+}
+.doodle-header__actions {
+  gap: 0.65rem;
+}
+.doodle-header .landing-header-cta {
+  min-height: 42px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+}
+.doodle-hero {
+  min-height: 640px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 2.5rem;
+  align-items: center;
+  padding-block: 5.5rem 6rem;
+}
+.doodle-hero__copy {
+  position: relative;
+  z-index: 1;
+}
+.doodle-eyebrow,
+.doodle-section-index {
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.doodle-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: #ffd76a;
+  color: #292929;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid #292929;
+  border-radius: 10px 13px 9px 12px;
+  transform: rotate(-2deg);
+}
+.doodle-eyebrow > span {
+  font-size: 1.1rem;
+  line-height: 0;
+}
+.doodle-hero h1 {
+  max-width: 10ch;
+  margin-top: 1.7rem;
+  font-size: clamp(3.8rem, 6.5vw, 6.7rem);
+  line-height: 0.98;
+}
+.doodle-underline {
+  position: relative;
+  white-space: nowrap;
+}
+.doodle-underline::after {
+  content: "";
+  position: absolute;
+  left: 1%;
+  bottom: -0.06em;
+  width: 96%;
+  height: 0.09em;
+  border: 3px solid var(--primary);
+  border-top: 0;
+  border-radius: 50%;
+  transform: rotate(-2deg);
+}
+.doodle-hero__copy > p {
+  max-width: 49ch;
+  margin-top: 2rem;
+  color: var(--muted-foreground);
+  font-size: 1.12rem;
+  line-height: 1.72;
+}
+.doodle-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 2.1rem;
+}
+.doodle-hero__actions .landing-secondary-cta {
+  min-height: 3.2rem;
+  padding-inline: 0.5rem;
+}
+.doodle-hero__note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 2.6rem;
+  color: var(--muted-foreground);
+  font:
+    1.2rem "Patrick Hand",
+    cursive;
+  transform: rotate(-3deg);
+}
+.doodle-hero__note span {
+  color: var(--primary-hover);
+  font-size: 2rem;
+}
+.doodle-hero__art {
+  position: relative;
+  min-width: 0;
+}
+.study-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(6px 8px 0 rgb(41 41 41 / 0.08));
+}
+.doodle-art-label {
+  position: absolute;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 2px solid #292929;
+  border-radius: 10px 13px 11px 14px;
+  background: #fff;
+  color: #292929;
+  box-shadow: 3px 4px 0 #292929;
+  font:
+    1.1rem "Patrick Hand",
+    cursive;
+}
+.doodle-art-label--top {
+  right: 2%;
+  top: 4%;
+  transform: rotate(5deg);
+}
+.doodle-art-label--bottom {
+  left: 3%;
+  bottom: 3%;
+  transform: rotate(-5deg);
+  background: #cbb7f5;
+}
+.doodle-features {
+  padding-block: 6rem 6.5rem;
+  border-block: 1.5px solid var(--foreground);
+  background: var(--card);
+}
+.doodle-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 2.4rem;
+}
+.doodle-section-index {
+  color: var(--link-ink);
+}
+.doodle-section-head h2,
+.doodle-community h2 {
+  max-width: 18ch;
+  margin-top: 0.75rem;
+  font-size: clamp(2.65rem, 4.2vw, 4.6rem);
+  line-height: 1.04;
+}
+.doodle-section-head h2 span {
+  color: var(--link-ink);
+}
+.doodle-section-head > p {
+  max-width: 32ch;
+  color: var(--muted-foreground);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+.doodle-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+.doodle-feature {
+  position: relative;
+  display: flex;
+  min-height: 338px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1.35rem;
+  border: 2px solid #292929;
+  border-radius: 19px 16px 20px 15px;
+  color: #292929;
+  box-shadow: 4px 5px 0 #292929;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+.doodle-feature:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: 6px 9px 0 #292929;
+}
+.doodle-feature--mint {
+  background: #a8dcc4;
+}
+.doodle-feature--yellow {
+  background: #ffd76a;
+}
+.doodle-feature--blue {
+  background: #a9d8f3;
+}
+.doodle-feature--lavender {
+  background: #cbb7f5;
+}
+.doodle-feature__number {
+  font:
+    1.2rem "Patrick Hand",
+    cursive;
+}
+.doodle-feature__drawing {
+  position: relative;
+  display: grid;
+  width: 104px;
+  height: 92px;
+  place-items: center;
+  align-self: center;
+}
+.doodle-feature__drawing svg {
+  position: relative;
+  z-index: 1;
+  stroke: #292929;
+  transform: rotate(-8deg);
+}
+.doodle-feature:nth-child(even) .doodle-feature__drawing svg {
+  transform: rotate(8deg);
+}
+.doodle-feature:nth-child(2) .doodle-feature__drawing,
+.doodle-feature:nth-child(4) .doodle-feature__drawing {
+  align-self: flex-start;
+}
+.doodle-feature:nth-child(3) .doodle-feature__drawing {
+  align-self: flex-end;
+}
+.doodle-feature__scribble {
+  position: absolute;
+  inset: 9px 4px;
+  border: 2px dashed #292929;
+  border-radius: 45% 55% 50% 46%;
+  background: rgb(255 255 255 / 0.32);
+  transform: rotate(10deg);
+}
+.doodle-feature h3 {
+  max-width: 11ch;
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+.doodle-feature p {
+  max-width: 25ch;
+  margin-top: 0.55rem;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+.doodle-feature__link {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  place-items: center;
+  margin-top: 1rem;
+  border: 1.5px solid #292929;
+  border-radius: 50%;
+  background: #fff;
+}
+.doodle-feature__link:hover {
+  transform: rotate(-30deg);
+}
+.doodle-steps {
+  padding-block: 6rem 7rem;
+}
+.doodle-step-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  margin: 4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.doodle-step-list li {
+  position: relative;
+  padding: 1.5rem 1rem 1.5rem 1.5rem;
+  border-top: 2px solid var(--foreground);
+}
+.doodle-step-list li:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: -1.35rem;
+  right: -1.3rem;
+  color: var(--primary-hover);
+  font:
+    2rem "Patrick Hand",
+    cursive;
+  transform: rotate(10deg);
+}
+.doodle-step-list__number {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  margin-top: -2.8rem;
+  margin-bottom: 2rem;
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  background: #ffd76a;
+  color: #292929;
+  font:
+    1.4rem "Patrick Hand",
+    cursive;
+}
+.doodle-step-list li > svg {
+  color: var(--primary-hover);
+}
+.doodle-step-list h3 {
+  margin-top: 0.7rem;
+  font-size: 1.5rem;
+}
+.doodle-step-list p {
+  max-width: 28ch;
+  margin-top: 0.5rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.doodle-community {
+  padding-block: 6rem;
+  background: #a8dcc4;
+  color: #292929;
+  border-block: 2px solid #292929;
+}
+.dark .doodle-community {
+  background: #365346;
+  color: #f9f5ea;
+}
+.doodle-community__grid {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.doodle-community__copy > p {
+  max-width: 37ch;
+  margin: 1.4rem 0 2rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+.doodle-community .doodle-section-index {
+  color: inherit;
+}
+.doodle-workspace-preview {
+  overflow: hidden;
+  border: 2px solid #292929;
+  border-radius: 18px 16px 20px 17px;
+  background: #fffdf5;
+  color: #292929;
+  box-shadow: 9px 10px 0 #292929;
+  transform: rotate(1deg);
+}
+.doodle-workspace-preview__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 2px solid #292929;
+}
+.doodle-workspace-preview__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font: 600 1.05rem var(--font-display-stack);
+}
+.doodle-workspace-preview__brand svg {
+  width: 25px;
+  height: 25px;
+}
+.doodle-workspace-preview__sample {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.doodle-workspace-preview__body {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  min-height: 290px;
+}
+.doodle-workspace-preview__body aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 0.55rem;
+  border-right: 1px solid #aaa;
+  background: #f7f1e5;
+}
+.doodle-workspace-preview__body aside span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.doodle-workspace-preview__body aside .is-active {
+  border-radius: 7px;
+  background: #ffd76a;
+}
+.doodle-workspace-preview__main {
+  padding: 1.25rem;
+}
+.doodle-workspace-preview__main .doodle-section-index {
+  font-size: 0.65rem;
+}
+.doodle-workspace-preview__main h3 {
+  margin: 0.3rem 0 1rem;
+  font-size: 1.5rem;
+}
+.doodle-preview-session {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1.5px solid #292929;
+  border-radius: 11px;
+  background: #a9d8f3;
+}
+.doodle-preview-session div,
+.doodle-preview-bottom > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.doodle-preview-session span,
+.doodle-preview-bottom span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.doodle-preview-session strong {
+  font: 600 1.4rem var(--font-display-stack);
+}
+.doodle-preview-session small,
+.doodle-preview-bottom small {
+  font-size: 0.75rem;
+}
+.doodle-preview-bottom {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+.doodle-preview-bottom > div {
+  padding: 0.8rem;
+  border: 1px solid #292929;
+  border-radius: 10px;
+  background: #fff;
+}
+.doodle-preview-bottom > div:nth-child(2) {
+  background: #fff0c7;
+}
+.doodle-preview-bottom strong {
+  font-size: 0.87rem;
+}
+.doodle-closer {
+  padding-block: 6rem;
+}
+.doodle-closer__paper {
+  position: relative;
+  max-width: 870px;
+  margin-inline: auto;
+  padding: clamp(2rem, 6vw, 5rem);
+  border: 2px solid var(--foreground);
+  border-radius: 20px 16px 19px 17px;
+  background: var(--card);
+  box-shadow: 9px 10px 0 var(--foreground);
+  text-align: center;
+  transform: rotate(-1deg);
+}
+.doodle-closer__paper h2 {
+  max-width: 17ch;
+  margin: 0.8rem auto;
+  font-size: clamp(2.8rem, 4.5vw, 4.8rem);
+  line-height: 1.04;
+}
+.doodle-closer__paper p {
+  margin-bottom: 1.7rem;
+  color: var(--muted-foreground);
+}
+.doodle-closer__star {
+  position: absolute;
+  top: -1.4rem;
+  right: 2rem;
+  color: var(--primary-hover);
+  font-size: 4rem;
+  line-height: 1;
+}
+.doodle-footer {
+  border-top: 1.5px solid var(--foreground);
+  padding-block: 1.6rem;
+}
+.doodle-footer .doodle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.doodle-footer p,
+.doodle-footer a {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.doodle-footer a:hover {
+  text-decoration: underline;
+}
+
+/* The notebook identity extends to all authenticated routes. */
+.auth-showcase {
+  border: 2px solid var(--foreground);
+  border-radius: 22px 18px 24px 19px;
+  background: var(--accent);
+  box-shadow: 6px 7px 0 var(--foreground);
+}
+.auth-card button[type="submit"] {
+  min-height: 2.85rem;
+  border: 1.5px solid var(--foreground);
+  border-radius: 11px 13px 10px 12px;
+  box-shadow: 2px 3px 0 var(--foreground);
+  font-weight: 800;
+}
+.auth-card button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 3px 4px 0 var(--foreground);
+  transform: translate(-1px, -1px);
+}
+.splash__mark .notebook-mark {
+  width: 5.5rem;
+  height: 5.5rem;
+}
+.brand-link--logo::before {
+  content: "✳";
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: none;
+  place-items: center;
+  margin-right: 0.35rem;
+  border: 1.5px solid var(--foreground);
+  border-radius: 7px 10px 8px 9px;
+  background: #ffd76a;
+  color: #292929;
+  font-size: 1.2rem;
+  transform: rotate(-6deg);
+}
+.brand-link--logo::after {
+  content: "study buddy.";
+  color: var(--foreground);
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.desk-rail {
+  border-right: 1.5px solid var(--foreground);
+  background: var(--card);
+}
+.desk-rail__brand {
+  border-bottom-style: dashed;
+}
+.desk-rail__brand-link .notebook-mark {
+  width: 45px;
+  height: 45px;
+}
+.desk-rail__edition {
+  font-family: "Patrick Hand", cursive;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.desk-rail__monogram {
+  border: 2px solid var(--foreground);
+  border-radius: 8px 11px 7px 10px;
+  background: #ffd76a;
+  color: #292929;
+  box-shadow: 2px 3px 0 var(--foreground);
+  transform: rotate(-5deg);
+}
+.desk-rail__wordmark {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+}
+.desk-nav-link {
+  border: 1.5px solid transparent;
+  border-radius: 10px 13px 9px 12px;
+}
+.desk-nav-link[aria-current="page"] {
+  border-color: var(--foreground);
+  background: #ffd76a;
+  color: #292929;
+  box-shadow: 2px 3px 0 var(--foreground);
+  transform: rotate(-1deg);
+}
+.desk-nav-link[aria-current="page"] .desk-nav-link__count {
+  background: #fff;
+  color: #292929;
+}
+.desk-topbar {
+  border-bottom: 1.5px solid var(--foreground);
+  background: var(--background);
+}
+.desk-body {
+  background: var(--background);
+}
+.desk-card {
+  background: var(--card);
+}
+.desk-card__title,
+.campus-dashboard h2 {
+  font-family: var(--font-display-stack);
+}
+.campus-dashboard__intro {
+  border-bottom: 2px dashed var(--border);
+}
+.campus-kicker {
+  color: var(--link-ink);
+  letter-spacing: 0.07em;
+}
+.campus-session {
+  border: 2px solid var(--foreground);
+  border-radius: 19px 16px 21px 17px;
+  background: #a9d8f3;
+  color: #292929;
+  box-shadow: 5px 6px 0 var(--foreground);
+}
+.dark .campus-session {
+  background: #426b80;
+  color: #f9f5ea;
+}
+.campus-session__action {
+  border-radius: 10px 12px 9px 11px;
+}
+.campus-button {
+  border: 1.5px solid var(--foreground);
+  border-radius: 10px 12px 9px 11px;
+  box-shadow: 2px 3px 0 var(--foreground);
+}
+.campus-button:hover {
+  box-shadow: 3px 4px 0 var(--foreground);
+  transform: translate(-1px, -1px);
+}
+.campus-empty::before {
+  content: "✳";
+  display: block;
+  width: fit-content;
+  margin-bottom: 0.3rem;
+  color: var(--link-ink);
+  font: 1.6rem var(--font-display-stack);
+}
+.campus-tasks {
+  border: 1.5px solid var(--foreground);
+  border-radius: 12px 16px 13px 15px;
+  background: var(--secondary);
+  box-shadow: 3px 4px 0 var(--foreground);
+}
+.campus-partner,
+.campus-group,
+.campus-timetable,
+.campus-goals {
+  border-radius: 18px 15px 19px 16px;
+}
+.portal-empty-state {
+  border: 1.5px dashed var(--border);
+  border-radius: 18px 15px 19px 16px;
+}
+.portal-empty-state::before,
+.desk-empty::before {
+  content: "✳";
+  display: block;
+  width: fit-content;
+  margin: 0 auto 0.5rem;
+  color: var(--primary-hover);
+  font: 2rem var(--font-display-stack);
+}
+
+@media (max-width: 1050px) {
+  .doodle-nav {
+    display: none;
+  }
+  .doodle-feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .doodle-feature {
+    min-height: 300px;
+  }
+}
+@media (max-width: 760px) {
+  .doodle-container {
+    width: min(100% - 2rem, 560px);
+  }
+  .doodle-header__inner {
+    min-height: 70px;
+  }
+  .doodle-login {
+    display: none;
+  }
+  .doodle-hero {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-block: 4rem;
+  }
+  .doodle-hero h1 {
+    font-size: clamp(3.3rem, 10vw, 5rem);
+  }
+  .doodle-hero__art {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+  .doodle-section-head {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .doodle-community__grid {
+    grid-template-columns: 1fr;
+  }
+  .doodle-step-list {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .doodle-step-list li:not(:last-child)::after {
+    top: auto;
+    bottom: -2.4rem;
+    right: 50%;
+    transform: rotate(90deg);
+  }
+  .doodle-steps,
+  .doodle-features,
+  .doodle-community,
+  .doodle-closer {
+    padding-block: 4rem;
+  }
+  .doodle-footer .doodle-container {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 480px) {
+  .doodle-brand {
+    font-size: 1.16rem;
+  }
+  .notebook-mark {
+    width: 32px;
+    height: 32px;
+  }
+  .doodle-header__actions {
+    gap: 0.25rem;
+  }
+  .doodle-header .landing-header-cta {
+    min-height: 40px;
+    padding-inline: 0.5rem;
+    font-size: 0.73rem;
+  }
+  .doodle-header .landing-header-cta svg {
+    display: none;
+  }
+  .doodle-hero h1 {
+    font-size: clamp(2.9rem, 11vw, 4.1rem);
+  }
+  .doodle-hero__copy > p {
+    font-size: 1rem;
+  }
+  .doodle-feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .doodle-feature {
+    min-height: 240px;
+  }
+  .doodle-feature__drawing {
+    align-self: flex-end;
+    margin-top: -1rem;
+  }
+  .doodle-feature h3 {
+    max-width: none;
+  }
+  .doodle-workspace-preview__body {
+    grid-template-columns: 1fr;
+  }
+  .doodle-workspace-preview__body aside {
+    display: none;
+  }
+  .doodle-workspace-preview__sample {
+    font-size: 0.57rem;
+  }
+  .doodle-art-label {
+    font-size: 0.85rem;
+  }
+  .doodle-closer__star {
+    right: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .doodle-feature,
+  .doodle-feature__link,
+  .btn,
+  .landing-header-cta,
+  .landing-primary-cta,
+  .portal-button,
+  .desk-create,
+  .desk-button {
+    transition: none;
+  }
+}

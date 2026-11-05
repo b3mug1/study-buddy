@@ -2,6 +2,7 @@
 
 import Link from "@/components/navigation/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { NotebookMark } from "@/components/notebook-mark";
 import { useI18n } from "@/lib/i18n";
 
 export function OnboardingContent({ children }: { children: React.ReactNode }) {
@@ -10,16 +11,19 @@ export function OnboardingContent({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8">
-        <Link href="/" className="brand-link brand-link--logo">
-          <span className="brand-logo-crop" aria-hidden="true">
-            <img src="/study-buddy-logo.png" alt="" />
+        <Link href="/" className="doodle-brand" aria-label="Study Buddy">
+          <NotebookMark />
+          <span>
+            study buddy<span className="doodle-brand__dot">.</span>
           </span>
         </Link>
         <LanguageSwitcher compact />
       </header>
       <div className="mx-auto grid max-w-7xl gap-12 px-5 pb-14 pt-6 sm:px-8 lg:grid-cols-[0.72fr_1fr] lg:pt-14">
         <section className="max-w-md">
-          <p className="text-sm font-semibold text-muted-foreground">{t("Your student profile")}</p>
+          <p className="text-sm font-semibold text-muted-foreground">
+            {t("Your student profile")}
+          </p>
           <h1 className="mt-3 text-4xl leading-tight">
             {t("Let’s make this semester more connected.")}
           </h1>

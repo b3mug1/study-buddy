@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NotebookMark } from "@/components/notebook-mark";
 
 type SplashState = "animating" | "leaving" | "done";
-
-const BRAND_MARK = ["S", "B"];
 
 /**
  * First-visit loading splash. Plays one anime.js timeline, then removes itself.
@@ -34,12 +33,11 @@ export function SplashScreen() {
     };
 
     async function play() {
-      const { createTimeline, stagger, utils } = await import("animejs");
+      const { createTimeline, utils } = await import("animejs");
       if (disposed) return;
 
       document.documentElement.style.overflow = "hidden";
 
-      const letters = root!.querySelectorAll(".splash__letter");
       const ring = root!.querySelector(".splash__ring");
       const bar = root!.querySelector(".splash__bar span");
       const caption = root!.querySelector(".splash__caption");
@@ -77,18 +75,7 @@ export function SplashScreen() {
           },
           120,
         )
-        .add(
-          letters,
-          {
-            opacity: [0, 1],
-            y: [26, 0],
-            scale: [0.7, 1],
-            duration: 620,
-            delay: stagger(90),
-            ease: "out(5)",
-          },
-          260,
-        )
+        .add(mark!, { y: [16, 0], duration: 620, ease: "out(5)" }, 260)
         .add(caption!, { opacity: [0, 1], y: [10, 0], duration: 500 }, 620)
         .add(bar!, { scaleX: [0, 1], duration: 900, ease: "inOut(3)" }, 560)
         .add(
@@ -139,8 +126,7 @@ export function SplashScreen() {
       <div className="splash__inner">
         <div className="splash__ring" aria-hidden="true" />
         <div className="splash__mark" aria-hidden="true">
-          <span className="splash__letter">{BRAND_MARK[0]}</span>
-          <span className="splash__letter">{BRAND_MARK[1]}</span>
+          <NotebookMark />
         </div>
         <p className="splash__caption">Study Buddy</p>
         <div className="splash__bar" aria-hidden="true">

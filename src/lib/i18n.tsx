@@ -11,8 +11,134 @@ import {
 export type Locale = "en" | "ru" | "kk";
 type TranslationValues = Record<string, string | number>;
 
+const landingTranslations = {
+  ru: {
+    Features: "Возможности",
+    Community: "Сообщество",
+    "Find study partners": "Найти напарников",
+    About: "О проекте",
+    "Your campus, your people": "Твой кампус, твои люди",
+    "Students studying together": "Студенты учатся вместе",
+    "Studying is better": "Учиться лучше",
+    "together.": "вместе.",
+    "Find your people, organize study sessions, share knowledge, and make university life a little easier.":
+      "Находи единомышленников, планируй занятия, делись знаниями и делай студенческую жизнь немного проще.",
+    "Explore study groups": "Смотреть группы",
+    "A little help goes a long way": "Вместе любые задачи проще",
+    "Let's study!": "За учёбу!",
+    "Better together": "Вместе лучше",
+    "What you can do": "Возможности",
+    "Everything you need to": "Всё, что нужно, чтобы",
+    "learn together.": "учиться вместе.",
+    "A friendly home for the people, plans, and notes behind every good study session.":
+      "Место для людей, планов и заметок, из которых складываются хорошие занятия.",
+    "Find your study buddy": "Найди напарника по учёбе",
+    "Meet students taking your courses and learning at your pace.":
+      "Знакомься со студентами своих курсов с похожим темпом учёбы.",
+    "Make a study group": "Создай учебную группу",
+    "Turn a shared subject into a place to plan, talk, and learn.":
+      "Объединись по общему предмету, чтобы планировать, общаться и учиться.",
+    "Plan your week": "Планируй неделю",
+    "Keep sessions and study goals together in one clear schedule.":
+      "Собери занятия и учебные цели в одном понятном расписании.",
+    "Share what you know": "Делись знаниями",
+    "Bring notes and helpful materials to your next session.":
+      "Делись заметками и полезными материалами перед встречей.",
+    "Three small steps.": "Три простых шага.",
+    "A lot of good company.": "И хорошая компания.",
+    "From a blank page to a study plan that actually happens.":
+      "От чистой страницы до плана занятий, который работает.",
+    "Create your profile": "Создай профиль",
+    "Add your courses and the way you like to study.":
+      "Укажи свои предметы и предпочтения в учёбе.",
+    "Find your people": "Найди своих",
+    "Connect with classmates or join a study group.":
+      "Знакомься с однокурсниками или вступай в группу.",
+    "Learn together": "Учитесь вместе",
+    "Set a time, share notes, and keep going together.":
+      "Договоритесь о времени, делитесь заметками и двигайтесь дальше.",
+    "Inside Study Buddy": "Внутри Study Buddy",
+    "A place for your whole study circle.":
+      "Место для всей твоей учебной компании.",
+    "Find a partner, see what your group is working on, and keep your next session in view.":
+      "Находи напарников, следи за задачами группы и готовься к следующей встрече.",
+    "Let's make progress.": "Двигаемся вперёд.",
+    "Plan together": "Планируйте вместе",
+    "Your notes": "Твои заметки",
+    "Keep ideas close": "Идеи под рукой",
+    "Ready for your session": "К занятию готово",
+    "A note for you": "Заметка для тебя",
+    "Your next study buddy is waiting!": "Твой будущий напарник уже ждёт!",
+    "Good ideas grow when we share them.":
+      "Хорошие идеи растут, когда ими делятся.",
+    "Let's get started": "Начнём",
+    "Back to top": "Наверх",
+  },
+  kk: {
+    Features: "Мүмкіндіктер",
+    Community: "Қауымдастық",
+    "Find study partners": "Оқу серіктерін табу",
+    About: "Жоба туралы",
+    "Your campus, your people": "Өз кампусың, өз ортаң",
+    "Students studying together": "Студенттер бірге оқып жатыр",
+    "Studying is better": "Бірге оқу",
+    "together.": "қызығырақ.",
+    "Find your people, organize study sessions, share knowledge, and make university life a little easier.":
+      "Пікірлес студенттерді тап, оқу кездесулерін жоспарла, біліміңмен бөліс және студенттік өмірді жеңілдет.",
+    "Explore study groups": "Оқу топтарын көру",
+    "A little help goes a long way": "Бірге бәрі оңайырақ",
+    "Let's study!": "Оқиық!",
+    "Better together": "Бірге жақсы",
+    "What you can do": "Мүмкіндіктер",
+    "Everything you need to": "Бірге оқу үшін",
+    "learn together.": "бәрі бар.",
+    "A friendly home for the people, plans, and notes behind every good study session.":
+      "Жақсы оқу кездесулеріне қажет адамдар, жоспарлар мен жазбалар бір жерде.",
+    "Find your study buddy": "Оқу серігіңді тап",
+    "Meet students taking your courses and learning at your pace.":
+      "Өзіңмен бір пәндерді оқитын және қарқыны ұқсас студенттермен таныс.",
+    "Make a study group": "Оқу тобын құр",
+    "Turn a shared subject into a place to plan, talk, and learn.":
+      "Ортақ пән бойынша жоспарлап, сөйлесіп, бірге оқитын орын жаса.",
+    "Plan your week": "Аптаңды жоспарла",
+    "Keep sessions and study goals together in one clear schedule.":
+      "Кездесулер мен оқу мақсаттарын бір түсінікті кестеге жина.",
+    "Share what you know": "Білгеніңмен бөліс",
+    "Bring notes and helpful materials to your next session.":
+      "Келесі кездесуге жазбалар мен пайдалы материалдарды әкел.",
+    "Three small steps.": "Үш қарапайым қадам.",
+    "A lot of good company.": "Көп жақсы серіктес.",
+    "From a blank page to a study plan that actually happens.":
+      "Бос парақтан іске асатын оқу жоспарына дейін.",
+    "Create your profile": "Профиль жаса",
+    "Add your courses and the way you like to study.":
+      "Пәндеріңді және оқу тәсіліңді көрсет.",
+    "Find your people": "Өз ортаңды тап",
+    "Connect with classmates or join a study group.":
+      "Курстастарыңмен таныс немесе оқу тобына қосыл.",
+    "Learn together": "Бірге оқыңдар",
+    "Set a time, share notes, and keep going together.":
+      "Уақытты белгілеңдер, жазбалармен бөлісіңдер және бірге жалғастырыңдар.",
+    "Inside Study Buddy": "Study Buddy ішінде",
+    "A place for your whole study circle.": "Бүкіл оқу ортаңа арналған орын.",
+    "Find a partner, see what your group is working on, and keep your next session in view.":
+      "Серігіңді тап, тобыңның жұмысын бақыла және келесі кездесуді ұмытпа.",
+    "Let's make progress.": "Алға жылжиық.",
+    "Plan together": "Бірге жоспарлау",
+    "Your notes": "Жазбаларың",
+    "Keep ideas close": "Ойлар қолда",
+    "Ready for your session": "Кездесуге дайын",
+    "A note for you": "Саған жазба",
+    "Your next study buddy is waiting!": "Болашақ оқу серігің сені күтуде!",
+    "Good ideas grow when we share them.": "Жақсы ойлар бөліскен сайын өседі.",
+    "Let's get started": "Бастайық",
+    "Back to top": "Жоғарыға",
+  },
+} satisfies Record<Exclude<Locale, "en">, Record<string, string>>;
+
 const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
   ru: {
+    ...landingTranslations.ru,
     "Interface language": "Язык интерфейса",
     "Dashboard navigation": "Навигация кабинета",
     "Back to overview": "Назад к обзору",
@@ -204,16 +330,23 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
       "Войдите, чтобы вернуться к своему учебному сообществу.",
     "A student learning network": "Учебное сообщество студентов",
     "How it works": "Как это работает",
-    "Study with classmates who take your courses.": "Учитесь с одногруппниками, которые проходят те же курсы.",
-    "Find people in your subjects and free hours. Set up sessions, share notes, and check in on each other.": "Находите людей по своим предметам и свободному времени. Назначайте занятия, делитесь конспектами и поддерживайте друг друга.",
-    "Three steps from empty calendar to a group that meets.": "Три шага от пустого расписания до группы, которая регулярно встречается.",
-    "Your next study group could start this week.": "Ваша следующая учебная группа может начаться уже на этой неделе.",
+    "Study with classmates who take your courses.":
+      "Учитесь с одногруппниками, которые проходят те же курсы.",
+    "Find people in your subjects and free hours. Set up sessions, share notes, and check in on each other.":
+      "Находите людей по своим предметам и свободному времени. Назначайте занятия, делитесь конспектами и поддерживайте друг друга.",
+    "Three steps from empty calendar to a group that meets.":
+      "Три шага от пустого расписания до группы, которая регулярно встречается.",
+    "Your next study group could start this week.":
+      "Ваша следующая учебная группа может начаться уже на этой неделе.",
     "Pick your subjects": "Выберите предметы",
-    "Tell us what you are taking this term. We match you with students in the same courses and at a similar pace.": "Расскажите, какие курсы у вас в этом семестре. Мы подберём студентов с теми же предметами и похожим темпом.",
+    "Tell us what you are taking this term. We match you with students in the same courses and at a similar pace.":
+      "Расскажите, какие курсы у вас в этом семестре. Мы подберём студентов с теми же предметами и похожим темпом.",
     "Agree on a time": "Договоритесь о времени",
-    "Propose a session, see who is free, and put it on everyone's calendar in one tap.": "Предложите занятие, посмотрите, кто свободен, и добавьте его всем в календарь одним нажатием.",
+    "Propose a session, see who is free, and put it on everyone's calendar in one tap.":
+      "Предложите занятие, посмотрите, кто свободен, и добавьте его всем в календарь одним нажатием.",
     "Meet and check in": "Встречайтесь и отмечайте прогресс",
-    "Share notes before the session and set a small goal for the week, so the next meeting builds on this one.": "Делитесь конспектами до занятия и ставьте небольшую цель на неделю, чтобы следующая встреча продолжала предыдущую.",
+    "Share notes before the session and set a small goal for the week, so the next meeting builds on this one.":
+      "Делитесь конспектами до занятия и ставьте небольшую цель на неделю, чтобы следующая встреча продолжала предыдущую.",
     "Example workspace": "Пример учебного пространства",
     Mathematics: "Математика",
     Programming: "Программирование",
@@ -706,26 +839,32 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
     More: "Ещё",
     "Find partner": "Найти напарника",
     Materials: "Материалы",
-    "Notes, files, and links from your study groups.": "Заметки, файлы и ссылки из ваших учебных групп.",
+    "Notes, files, and links from your study groups.":
+      "Заметки, файлы и ссылки из ваших учебных групп.",
     "Unable to load materials.": "Не удалось загрузить материалы.",
-    "Some group materials could not be loaded.": "Не удалось загрузить материалы некоторых групп.",
-    "Join a study group to collect shared materials here.": "Вступите в учебную группу, чтобы здесь появились общие материалы.",
+    "Some group materials could not be loaded.":
+      "Не удалось загрузить материалы некоторых групп.",
+    "Join a study group to collect shared materials here.":
+      "Вступите в учебную группу, чтобы здесь появились общие материалы.",
     "Open your personal notes": "Открыть личные заметки",
     "Share a material": "Поделиться материалом",
     "Campus edition": "Кампусное издание",
     "Your study space": "Ваше учебное пространство",
     "Your campus, your people.": "Ваш кампус. Ваши люди.",
     "Open session": "Открыть занятие",
-    "Make time to study together this week.": "Найдите время для совместной учёбы на этой неделе.",
+    "Make time to study together this week.":
+      "Найдите время для совместной учёбы на этой неделе.",
     "Study together": "Учимся вместе",
     "Find a study partner": "Найдите напарника для учёбы",
-    "Find someone taking the same subjects and make the next session easier to start.": "Познакомьтесь со студентами ваших предметов и договоритесь о следующем занятии.",
+    "Find someone taking the same subjects and make the next session easier to start.":
+      "Познакомьтесь со студентами ваших предметов и договоритесь о следующем занятии.",
     "{count} students to meet": "Студентов для знакомства: {count}",
     "1 student to meet": "Один студент для знакомства",
     "Explore students": "Найти студентов",
     "My study groups": "Мои учебные группы",
     "View all groups": "Все группы",
-    "You have not joined a study group yet.": "Вы пока не вступили ни в одну учебную группу.",
+    "You have not joined a study group yet.":
+      "Вы пока не вступили ни в одну учебную группу.",
     "Browse study groups": "Посмотреть группы",
     "Your schedule": "Ваше расписание",
     "Full schedule": "Всё расписание",
@@ -802,6 +941,7 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
     You: "Вы",
   },
   kk: {
+    ...landingTranslations.kk,
     "Interface language": "Интерфейс тілі",
     "Dashboard navigation": "Кабинет навигациясы",
     "Back to overview": "Шолуға оралу",
@@ -994,16 +1134,23 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
       "Оқу қауымдастығына қайта қосылу үшін кіріңіз.",
     "A student learning network": "Студенттерге арналған оқу желісі",
     "How it works": "Бұл қалай жұмыс істейді",
-    "Study with classmates who take your courses.": "Курстарыңызды алып жүрген курстастарыңызбен бірге оқыңыз.",
-    "Find people in your subjects and free hours. Set up sessions, share notes, and check in on each other.": "Пәндеріңіз бен бос уақытыңызға сай адамдарды табыңыз. Сабақтар ұйымдастырыңыз, конспектілермен бөлісіңіз және бір-біріңізді қолдаңыз.",
-    "Three steps from empty calendar to a group that meets.": "Бос кестеден тұрақты кездесетін топқа дейінгі үш қадам.",
-    "Your next study group could start this week.": "Келесі оқу тобыңыз осы аптада басталуы мүмкін.",
+    "Study with classmates who take your courses.":
+      "Курстарыңызды алып жүрген курстастарыңызбен бірге оқыңыз.",
+    "Find people in your subjects and free hours. Set up sessions, share notes, and check in on each other.":
+      "Пәндеріңіз бен бос уақытыңызға сай адамдарды табыңыз. Сабақтар ұйымдастырыңыз, конспектілермен бөлісіңіз және бір-біріңізді қолдаңыз.",
+    "Three steps from empty calendar to a group that meets.":
+      "Бос кестеден тұрақты кездесетін топқа дейінгі үш қадам.",
+    "Your next study group could start this week.":
+      "Келесі оқу тобыңыз осы аптада басталуы мүмкін.",
     "Pick your subjects": "Пәндеріңізді таңдаңыз",
-    "Tell us what you are taking this term. We match you with students in the same courses and at a similar pace.": "Осы семестрде қандай курстар алып жатқаныңызды айтыңыз. Біз сізге бірдей пәндер мен ұқсас қарқындағы студенттерді таңдаймыз.",
+    "Tell us what you are taking this term. We match you with students in the same courses and at a similar pace.":
+      "Осы семестрде қандай курстар алып жатқаныңызды айтыңыз. Біз сізге бірдей пәндер мен ұқсас қарқындағы студенттерді таңдаймыз.",
     "Agree on a time": "Уақытты келісіңіз",
-    "Propose a session, see who is free, and put it on everyone's calendar in one tap.": "Сабақ ұсыныңыз, кім бос екенін көріңіз және бір рет басып, барлығының күнтізбесіне қосыңыз.",
+    "Propose a session, see who is free, and put it on everyone's calendar in one tap.":
+      "Сабақ ұсыныңыз, кім бос екенін көріңіз және бір рет басып, барлығының күнтізбесіне қосыңыз.",
     "Meet and check in": "Кездесіңіз және нәтижені тексеріңіз",
-    "Share notes before the session and set a small goal for the week, so the next meeting builds on this one.": "Сабаққа дейін конспектілермен бөлісіңіз және апта үшін шағын мақсат қойыңыз, сонда келесі кездесу осыны жалғастырады.",
+    "Share notes before the session and set a small goal for the week, so the next meeting builds on this one.":
+      "Сабаққа дейін конспектілермен бөлісіңіз және апта үшін шағын мақсат қойыңыз, сонда келесі кездесу осыны жалғастырады.",
     "Example workspace": "Оқу кеңістігінің үлгісі",
     Mathematics: "Математика",
     Programming: "Бағдарламалау",
@@ -1495,26 +1642,32 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
     More: "Тағы",
     "Find partner": "Серіктес табу",
     Materials: "Материалдар",
-    "Notes, files, and links from your study groups.": "Оқу топтарыңыздың жазбалары, файлдары және сілтемелері.",
+    "Notes, files, and links from your study groups.":
+      "Оқу топтарыңыздың жазбалары, файлдары және сілтемелері.",
     "Unable to load materials.": "Материалдарды жүктеу мүмкін болмады.",
-    "Some group materials could not be loaded.": "Кейбір топтардың материалдары жүктелмеді.",
-    "Join a study group to collect shared materials here.": "Ортақ материалдарды көру үшін оқу тобына қосылыңыз.",
+    "Some group materials could not be loaded.":
+      "Кейбір топтардың материалдары жүктелмеді.",
+    "Join a study group to collect shared materials here.":
+      "Ортақ материалдарды көру үшін оқу тобына қосылыңыз.",
     "Open your personal notes": "Жеке жазбаларды ашу",
     "Share a material": "Материалмен бөлісу",
     "Campus edition": "Кампус басылымы",
     "Your study space": "Сіздің оқу кеңістігіңіз",
     "Your campus, your people.": "Сіздің кампус. Сіздің орта.",
     "Open session": "Сабақты ашу",
-    "Make time to study together this week.": "Осы аптада бірге оқуға уақыт бөліңіз.",
+    "Make time to study together this week.":
+      "Осы аптада бірге оқуға уақыт бөліңіз.",
     "Study together": "Бірге оқимыз",
     "Find a study partner": "Оқу серіктесін табыңыз",
-    "Find someone taking the same subjects and make the next session easier to start.": "Бір пәнді оқитын студенттерді тауып, келесі кездесуді жоспарлаңыз.",
+    "Find someone taking the same subjects and make the next session easier to start.":
+      "Бір пәнді оқитын студенттерді тауып, келесі кездесуді жоспарлаңыз.",
     "{count} students to meet": "Танысуға болатын студенттер: {count}",
     "1 student to meet": "Танысуға болатын бір студент",
     "Explore students": "Студенттерді қарау",
     "My study groups": "Менің оқу топтарым",
     "View all groups": "Барлық топтар",
-    "You have not joined a study group yet.": "Сіз әлі оқу тобына қосылмадыңыз.",
+    "You have not joined a study group yet.":
+      "Сіз әлі оқу тобына қосылмадыңыз.",
     "Browse study groups": "Топтарды қарау",
     "Your schedule": "Сіздің кестеңіз",
     "Full schedule": "Толық кесте",

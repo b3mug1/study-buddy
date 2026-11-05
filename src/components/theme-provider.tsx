@@ -76,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         id: counterRef.current,
         x: origin?.x ?? window.innerWidth / 2,
         y: origin?.y ?? window.innerHeight / 2,
-        color: next === "dark" ? "#0f0f0f" : "#ffffff",
+        color: next === "dark" ? "#242526" : "#fffdf5",
       });
 
       // Let the overlay paint before it is animated

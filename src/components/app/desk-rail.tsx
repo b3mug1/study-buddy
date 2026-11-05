@@ -17,6 +17,7 @@ import {
 import Link from "@/components/navigation/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotebookMark } from "@/components/notebook-mark";
 import { useI18n } from "@/lib/i18n";
 
 export type DeskCounts = {
@@ -113,9 +114,7 @@ export function DeskRail({
           onClick={onClose}
           aria-label={t("Home")}
         >
-          <span className="desk-rail__monogram" aria-hidden="true">
-            sb.
-          </span>
+          <NotebookMark />
           <span className="desk-rail__wordmark">
             Study
             <br />
