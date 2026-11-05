@@ -4014,9 +4014,10 @@ a.text-primary {
   white-space: nowrap;
 }
 .study-buddy-logo {
-  width: 39px;
-  height: 39px;
+  width: 60px;
+  height: 60px;
   flex: none;
+  border-radius: 50%;
   object-fit: contain;
 }
 .study-buddy-logo--dark {
@@ -4615,8 +4616,8 @@ html.dark .study-buddy-logo--dark {
   border-bottom-style: dashed;
 }
 .desk-rail__brand-link .study-buddy-logo {
-  width: 45px;
-  height: 45px;
+  width: 56px;
+  height: 56px;
 }
 .desk-rail__edition {
   font-family: "Patrick Hand", cursive;
@@ -4796,8 +4797,8 @@ html.dark .study-buddy-logo--dark {
     font-size: 1.16rem;
   }
   .study-buddy-logo {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
   }
   .doodle-header__actions {
     gap: 0.25rem;
