@@ -13,6 +13,7 @@ import Link from "@/components/navigation/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotebookMark } from "@/components/notebook-mark";
+import { StudyBuddyLogo } from "@/components/study-buddy-logo";
 import { ApiRequestError, authenticatedApiJson } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 
@@ -195,7 +196,7 @@ export function LandingPage() {
       <header className="landing-header doodle-header">
         <div className="doodle-container doodle-header__inner">
           <Link href="/" className="doodle-brand" aria-label="Study Buddy">
-            <NotebookMark />
+            <StudyBuddyLogo />
             <span>
               study buddy<span className="doodle-brand__dot">.</span>
             </span>

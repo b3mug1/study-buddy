@@ -4013,11 +4013,20 @@ a.text-primary {
   font: 600 1.45rem/1 var(--font-display-stack);
   white-space: nowrap;
 }
-.notebook-mark {
+.study-buddy-logo {
   width: 39px;
   height: 39px;
   flex: none;
-  color: #292929;
+  object-fit: contain;
+}
+.study-buddy-logo--dark {
+  display: none;
+}
+html.dark .study-buddy-logo--light {
+  display: none;
+}
+html.dark .study-buddy-logo--dark {
+  display: block;
 }
 .doodle-brand__dot {
   color: var(--primary-hover);
@@ -4605,7 +4614,7 @@ a.text-primary {
 .desk-rail__brand {
   border-bottom-style: dashed;
 }
-.desk-rail__brand-link .notebook-mark {
+.desk-rail__brand-link .study-buddy-logo {
   width: 45px;
   height: 45px;
 }
@@ -4786,7 +4795,7 @@ a.text-primary {
   .doodle-brand {
     font-size: 1.16rem;
   }
-  .notebook-mark {
+  .study-buddy-logo {
     width: 32px;
     height: 32px;
   }

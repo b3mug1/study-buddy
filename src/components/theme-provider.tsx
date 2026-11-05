@@ -50,6 +50,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
     document.documentElement.style.colorScheme = resolvedTheme;
+    const favicon = document.querySelector<HTMLLinkElement>("#app-favicon");
+    if (favicon) {
+      favicon.href = `/study-buddy-logo-${resolvedTheme}.png`;
+    }
   }, [resolvedTheme]);
 
   // Circular reveal that masks the switch, animated with anime.js
