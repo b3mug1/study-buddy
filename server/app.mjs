@@ -58,10 +58,15 @@ export function createApp({ serveStatic = true } = {}) {
     return false;
   }
 
+  const cookieSecure =
+    process.env.COOKIE_SECURE !== undefined
+      ? process.env.COOKIE_SECURE === "true"
+      : isProduction;
+
   function cookieOptions(maxAge) {
     return {
       httpOnly: true,
-      secure: isProduction,
+      secure: cookieSecure,
       sameSite: "lax",
       path: "/",
       maxAge: maxAge * 1000,
