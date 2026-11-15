@@ -1,8 +1,22 @@
 {
     admin off
+    auto_https disable_redirects
 }
 
-{$DOMAIN::80} {
+http://study.b3mug1.dev, https://study.b3mug1.dev {
+    tls internal
+    # Realtime WebSocket connections directly to FastAPI
+    handle /api/v1/ws/* {
+        reverse_proxy api:8000
+    }
+
+    # Express proxy and React application
+    handle {
+        reverse_proxy frontend:1000
+    }
+}
+
+:80 {
     # Realtime WebSocket connections directly to FastAPI
     handle /api/v1/ws/* {
         reverse_proxy api:8000

@@ -47,10 +47,17 @@ export function createApp({ serveStatic = true } = {}) {
     try {
       const originUrl = new URL(origin);
       if (originUrl.origin !== origin || !["http:", "https:"].includes(originUrl.protocol)) return false;
-      const configuredOrigin = process.env.FRONTEND_URL
-        ? new URL(process.env.FRONTEND_URL).origin
-        : null;
-      if (configuredOrigin && origin === configuredOrigin) return true;
+      const configuredOrigins = (process.env.FRONTEND_URL || "")
+        .split(",")
+        .map((u) => {
+          try {
+            return new URL(u.trim()).origin;
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      if (configuredOrigins.includes(origin)) return true;
       if (!isProduction && ["http://localhost:1000", "http://127.0.0.1:1000"].includes(origin)) return true;
     } catch {
       return false;
@@ -303,7 +310,7 @@ export function createApp({ serveStatic = true } = {}) {
     const staticDirectory = path.join(projectDirectory, "dist");
     app.use(express.static(staticDirectory, { index: false }));
     app.use((request, response, next) => {
-      if (request.method === "GET" && !request.path.startsWith("/api/")) {
+      if (["GET", "HEAD"].includes(request.method) && !request.path.startsWith("/api/")) {
         return response.sendFile(path.join(staticDirectory, "index.html"), (error) => {
           if (error) next(error);
         });

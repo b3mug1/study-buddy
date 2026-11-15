@@ -230,7 +230,7 @@ def _enforce_auth_rate_limit(
 def _email_settings():
     settings = get_settings()
     if not settings.smtp_host or not settings.smtp_from or not settings.frontend_url:
-        raise HTTPException(status_code=503, detail="Email verification is not configured.")
+        return None
     frontend = urlsplit(settings.frontend_url)
     if frontend.scheme != "https" and not (
         frontend.scheme == "http" and frontend.hostname in {"localhost", "127.0.0.1"}
@@ -255,6 +255,14 @@ def _email_settings():
 
 
 def _send_verification_email(user_id: UUID, email: str) -> None:
+    settings = get_settings()
+    if not settings.smtp_host or not settings.smtp_from:
+        with database_connection() as connection:
+            connection.execute(
+                "update users set email_verified=true where id=%s",
+                (user_id,),
+            )
+        return
     settings = _email_settings()
     token = secrets.token_urlsafe(32)
     with database_connection() as connection:
@@ -289,7 +297,6 @@ def _send_verification_email(user_id: UUID, email: str) -> None:
 @router.post("/register", status_code=status.HTTP_202_ACCEPTED)
 def register(request: RegisterRequest) -> dict[str, str]:
     _settings_with_secret()
-    _email_settings()
     _enforce_auth_rate_limit("register", request.email, 20, timedelta(hours=1))
     new_user_id = uuid4()
     try:
@@ -342,6 +349,9 @@ def register(request: RegisterRequest) -> dict[str, str]:
         ) from error
 
     _send_verification_email(user_id, request.email.lower())
+    settings = get_settings()
+    if not settings.smtp_host or not settings.smtp_from:
+        return {"detail": "Account created and verified. You can now log in."}
     return {"detail": "Check your university email for a verification link."}
 
 

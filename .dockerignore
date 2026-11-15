@@ -2,8 +2,7 @@
 node_modules
 .npm
 
-# Build output is recreated in the builder stage.
-dist
+# Build output
 .vite
 
 # Python virtualenv

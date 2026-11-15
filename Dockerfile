@@ -1,23 +1,14 @@
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-ARG VITE_API_URL=http://localhost:8002
-ENV VITE_API_URL=${VITE_API_URL}
-RUN npm run build
-
-FROM node:20-alpine AS runner
+FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Install only production dependencies
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
+
+# Copy server and prebuilt frontend
 COPY server ./server
-COPY --from=builder /app/dist ./dist
+COPY dist ./dist
 
 EXPOSE 1000
 ENV API_PROXY_PORT=1000
