@@ -26,7 +26,7 @@ All database access is through the FastAPI service. Database values are paramete
 
 ## Database model and migrations
 
-[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks. [`migrations/003_intro_message_limits.sql`](./migrations/003_intro_message_limits.sql) adds the counter used to enforce the three-message chat-request limit. [`migrations/004_require_email_verification.sql`](./migrations/004_require_email_verification.sql) is retained for databases that already applied it. [`migrations/005_remove_email_verification.sql`](./migrations/005_remove_email_verification.sql) removes the verification-token table and email-verification flag; registration and sign-in do not send or require email confirmation.
+[`migrations/001_initial.sql`](./migrations/001_initial.sql) creates users and auth tokens, profiles, subjects, availability/preferences, connections, groups/membership, conversations/messages, notifications, and sessions/invitations. [`migrations/002_collaboration_features.sql`](./migrations/002_collaboration_features.sql) adds session outcomes, group tasks and materials, shared focus timers, weekly goals with topic checklists, and safety reports/blocks. [`migrations/003_intro_message_limits.sql`](./migrations/003_intro_message_limits.sql) adds the counter used to enforce the three-message chat-request limit. [`migrations/004_require_email_verification.sql`](./migrations/004_require_email_verification.sql) is retained for databases that already applied it. [`migrations/005_student_codes.sql`](./migrations/005_student_codes.sql) adds permanent student IDs used for profile discovery. [`migrations/006_remove_email_verification.sql`](./migrations/006_remove_email_verification.sql) removes the verification-token table and email-verification flag; registration and sign-in do not send or require email confirmation.
 
 Apply the migration once to an empty PostgreSQL database:
 
@@ -36,13 +36,14 @@ psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\001_initial.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\002_collaboration_features.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\003_intro_message_limits.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\004_require_email_verification.sql
-psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\005_remove_email_verification.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\005_student_codes.sql
+psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\006_remove_email_verification.sql
 ```
 
 If the database already exists, apply each migration it is missing in numerical order, once. Existing PostgreSQL Docker volumes do not rerun `/docker-entrypoint-initdb.d` scripts automatically. For the Compose database, for example:
 
 ```powershell
-docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/005_remove_email_verification.sql
+docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/006_remove_email_verification.sql
 ```
 
 For production, run migrations with a migration/owner role, run FastAPI with a separate restricted role, allow that role only the required table/sequence/function privileges, and restrict incoming database connections to the API host.
@@ -200,7 +201,7 @@ Unit/API tests cover profile validation, match-score calculations, and rejection
 
 ## Deployment and operational security
 
-Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and the exact `FRONTEND_URL` on the Express server, and set the exact `CORS_ORIGINS`, `DATABASE_URL`, and `JWT_SECRET_KEY` on FastAPI. Apply migration 005 to existing databases after deploying the updated API. Set `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
+Deploy the React static build with the Express API proxy and FastAPI to trusted hosts, and keep PostgreSQL on a private managed or self-hosted database. Set `API_URL` and the exact `FRONTEND_URL` on the Express server, and set the exact `CORS_ORIGINS`, `DATABASE_URL`, and `JWT_SECRET_KEY` on FastAPI. Apply any missing migrations in numerical order after deploying the updated API. Set `VITE_API_URL` to the reachable HTTPS API origin for WebSockets at build time. Use HTTPS/WSS, TLS to PostgreSQL, secret rotation, backups, and a dedicated database role. Configure reverse-proxy trusted hosts carefully; never accept user identity from arbitrary forwarded headers.
 
 For the `study.b3mug1.dev` deployment, `vercel.json` configures the proxy's `FRONTEND_URL` and `API_URL`, and `.env.production` configures the browser's `VITE_API_URL`. Check the Vercel project's Production environment variables for overrides, then redeploy so the new build includes the Render API URL. The Render service named `study-buddy` needs `CORS_ORIGINS=["https://study.b3mug1.dev"]`, which is set in `render.yaml` for Blueprint-managed services. For a standalone service, set it in Render's Environment page and deploy the service. An old Vercel deployment or an unsynced Render service will continue using its previous values.
 

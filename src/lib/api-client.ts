@@ -13,7 +13,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-function getApiErrorMessage(payload: unknown) {
+function getApiErrorMessage(payload: unknown, status: number) {
   if (typeof payload === "object" && payload !== null && "detail" in payload) {
     const detail = payload.detail;
     if (typeof detail === "string") return detail;
@@ -21,7 +21,7 @@ function getApiErrorMessage(payload: unknown) {
       return "Some profile details are invalid. Review the form and try again.";
     }
   }
-  return "The Study Buddy API could not complete this request. Please try again.";
+  return `The Study Buddy API returned an unexpected response (HTTP ${status}). Check the API service logs.`;
 }
 
 export async function authenticatedApiRequest(
@@ -59,7 +59,10 @@ export async function authenticatedApiRequest(
     } catch (error) {
       if (!(error instanceof SyntaxError)) throw error;
     }
-    throw new ApiRequestError(response.status, getApiErrorMessage(payload));
+    throw new ApiRequestError(
+      response.status,
+      getApiErrorMessage(payload, response.status),
+    );
   }
   return response;
 }
