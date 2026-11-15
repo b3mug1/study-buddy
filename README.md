@@ -43,7 +43,7 @@ psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f migrations\006_remove_email_verific
 If the database already exists, apply each migration it is missing in numerical order, once. Existing PostgreSQL Docker volumes do not rerun `/docker-entrypoint-initdb.d` scripts automatically. For the Compose database, for example:
 
 ```powershell
-docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/006_remove_email_verification.sql
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U study_buddy -d study_buddy -f /docker-entrypoint-initdb.d/006_remove_email_verification.sql
 ```
 
 For production, run migrations with a migration/owner role, run FastAPI with a separate restricted role, allow that role only the required table/sequence/function privileges, and restrict incoming database connections to the API host.
