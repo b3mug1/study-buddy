@@ -43,7 +43,10 @@ export function AppLayout() {
       setError("");
     } catch (loadError) {
       if (loadError instanceof ApiRequestError && loadError.status === 401) {
-        navigate("/login", { replace: true });
+        const returnTo = `${window.location.pathname}${window.location.search}`;
+        navigate(`/login?next=${encodeURIComponent(returnTo)}`, {
+          replace: true,
+        });
         return;
       }
       if (loadError instanceof ApiRequestError && loadError.status === 404) {
@@ -130,6 +133,13 @@ export function AppLayout() {
         label: t("Find partner"),
         meta: t("Discover students"),
         href: "/discover",
+        kind: "page",
+      },
+      {
+        id: "page-connect",
+        label: t("Find by QR or ID"),
+        meta: t("Scan a QR code or search by student ID"),
+        href: "/connect",
         kind: "page",
       },
       {

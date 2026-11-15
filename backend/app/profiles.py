@@ -33,7 +33,7 @@ def _load_profile(user: CurrentUser) -> ProfileResponse:
         profile_result = (
             client.table("profiles")
             .select(
-                "full_name, university_name, major, year_of_study, bio, "
+                "student_code, full_name, university_name, major, year_of_study, bio, "
                 "is_onboarded, show_in_discovery"
             )
             .eq("id", user.id)
@@ -88,6 +88,7 @@ def _load_profile(user: CurrentUser) -> ProfileResponse:
 
     return ProfileResponse(
         id=UUID(user.id),
+        student_code=profile["student_code"],
         full_name=profile["full_name"],
         university_name=profile["university_name"],
         major=profile["major"],

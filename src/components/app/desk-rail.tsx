@@ -6,6 +6,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  QrCode,
   Compass,
   LayoutDashboard,
   LogOut,
@@ -38,6 +39,7 @@ const primaryLinks: RailLink[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/groups", label: "Study groups", icon: BookOpen, count: "tasks" },
   { href: "/discover", label: "Find partner", icon: Compass },
+  { href: "/connect", label: "Find by QR or ID", icon: QrCode },
   {
     href: "/sessions",
     label: "Schedule",

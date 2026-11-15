@@ -139,6 +139,55 @@ const landingTranslations = {
 const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
   ru: {
     ...landingTranslations.ru,
+    "Find by QR or ID": "Найти по QR-коду или ID",
+    "Scan a QR code or search by student ID":
+      "Сканируйте QR-код или найдите студента по ID",
+    "Find each other": "Находите друг друга",
+    "Connect by QR or student ID": "Находите студентов по QR-коду или ID",
+    "Share your personal code or scan a classmate’s QR to open their profile.":
+      "Поделитесь личным кодом или отсканируйте QR однокурсника, чтобы открыть его профиль.",
+    "Your Study Buddy ID": "Ваш ID в Study Buddy",
+    "Let a classmate scan this QR or enter the code below.":
+      "Попросите однокурсника отсканировать QR или ввести код ниже.",
+    "Scan to open my Study Buddy profile":
+      "Сканируйте, чтобы открыть мой профиль Study Buddy",
+    "Personal ID": "Личный ID",
+    "Copy ID": "Скопировать ID",
+    Copied: "Скопировано",
+    "Student ID copied.": "ID студента скопирован.",
+    "Could not copy the ID. Select it and copy manually.":
+      "Не удалось скопировать ID. Выделите его и скопируйте вручную.",
+    "Find a classmate": "Найти однокурсника",
+    "Scan their QR with your phone or type their Study Buddy ID.":
+      "Отсканируйте QR телефоном или введите ID в Study Buddy.",
+    "Use your camera": "Использовать камеру",
+    "Camera access is only used to read a QR code.":
+      "Камера нужна только для считывания QR-кода.",
+    "Open camera": "Открыть камеру",
+    "Starting camera…": "Запускаем камеру…",
+    "Point at a QR code": "Наведите камеру на QR-код",
+    "Close camera": "Закрыть камеру",
+    "Camera QR scanner": "Сканер QR-кодов",
+    "Allow camera access in your browser settings, then try again.":
+      "Разрешите доступ к камере в настройках браузера и попробуйте снова.",
+    "No camera was found on this device.":
+      "На этом устройстве не найдена камера.",
+    "Unable to start the camera. Check that the page uses HTTPS.":
+      "Не удалось запустить камеру. Проверьте, что страница открыта по HTTPS.",
+    "This QR code does not contain a Study Buddy profile.":
+      "В этом QR-коде нет профиля Study Buddy.",
+    "Or enter an ID": "Или введите ID",
+    "Student ID": "ID студента",
+    Find: "Найти",
+    "No visible student profile matches this ID.":
+      "Видимый профиль студента с таким ID не найден.",
+    "Enter a valid Study Buddy ID.": "Введите корректный ID Study Buddy.",
+    "Student codes only open profiles that their owners have made visible to discovery.":
+      "По коду открываются только профили, владельцы которых разрешили показывать их в поиске.",
+    "Your profile is hidden. Turn on student discovery in profile settings before sharing your QR or ID.":
+      "Ваш профиль скрыт. Разрешите показывать его в поиске в настройках, прежде чем делиться QR-кодом или ID.",
+    "Profile settings": "Настройки профиля",
+    "My QR & student ID": "Мой QR-код и ID",
     "Interface language": "Язык интерфейса",
     "Dashboard navigation": "Навигация кабинета",
     "Back to overview": "Назад к обзору",
@@ -942,6 +991,54 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
   },
   kk: {
     ...landingTranslations.kk,
+    "Find by QR or ID": "QR немесе ID бойынша табу",
+    "Scan a QR code or search by student ID":
+      "QR-кодты сканерлеңіз немесе студентті ID бойынша табыңыз",
+    "Find each other": "Бір-біріңізді табыңыз",
+    "Connect by QR or student ID": "QR-код немесе студент ID арқылы табу",
+    "Share your personal code or scan a classmate’s QR to open their profile.":
+      "Жеке кодыңызды бөлісіңіз немесе курстасыңыздың QR-кодын сканерлеп, профилін ашыңыз.",
+    "Your Study Buddy ID": "Study Buddy ID нөміріңіз",
+    "Let a classmate scan this QR or enter the code below.":
+      "Курстасыңызға QR-кодты сканерлетіңіз немесе төмендегі кодты енгізіңіз.",
+    "Scan to open my Study Buddy profile":
+      "Study Buddy профилімді ашу үшін сканерлеңіз",
+    "Personal ID": "Жеке ID",
+    "Copy ID": "ID көшіру",
+    Copied: "Көшірілді",
+    "Student ID copied.": "Студент ID көшірілді.",
+    "Could not copy the ID. Select it and copy manually.":
+      "ID көшіру мүмкін болмады. Оны белгілеп, қолмен көшіріңіз.",
+    "Find a classmate": "Курстасыңызды табыңыз",
+    "Scan their QR with your phone or type their Study Buddy ID.":
+      "Телефонмен QR-кодын сканерлеңіз немесе Study Buddy ID нөмірін енгізіңіз.",
+    "Use your camera": "Камераны пайдалану",
+    "Camera access is only used to read a QR code.":
+      "Камера тек QR-кодты оқу үшін қолданылады.",
+    "Open camera": "Камераны ашу",
+    "Starting camera…": "Камера қосылуда…",
+    "Point at a QR code": "Камераны QR-кодқа бағыттаңыз",
+    "Close camera": "Камераны жабу",
+    "Camera QR scanner": "QR-код сканері",
+    "Allow camera access in your browser settings, then try again.":
+      "Браузер баптауларында камераға рұқсат беріп, қайта көріңіз.",
+    "No camera was found on this device.": "Бұл құрылғыда камера табылмады.",
+    "Unable to start the camera. Check that the page uses HTTPS.":
+      "Камераны қосу мүмкін болмады. Бет HTTPS арқылы ашылғанын тексеріңіз.",
+    "This QR code does not contain a Study Buddy profile.":
+      "Бұл QR-кодта Study Buddy профилі жоқ.",
+    "Or enter an ID": "Немесе ID енгізіңіз",
+    "Student ID": "Студент ID",
+    Find: "Табу",
+    "No visible student profile matches this ID.":
+      "Бұл ID бойынша көрінетін студент профилі табылмады.",
+    "Enter a valid Study Buddy ID.": "Дұрыс Study Buddy ID енгізіңіз.",
+    "Student codes only open profiles that their owners have made visible to discovery.":
+      "Код арқылы тек иесі іздеуге ашқан профильдер ғана көрінеді.",
+    "Your profile is hidden. Turn on student discovery in profile settings before sharing your QR or ID.":
+      "Профиліңіз жасырын. QR-кодты немесе ID бөліспес бұрын профиль баптауларында іздеуді қосыңыз.",
+    "Profile settings": "Профиль баптаулары",
+    "My QR & student ID": "Менің QR-кодым және ID",
     "Interface language": "Интерфейс тілі",
     "Dashboard navigation": "Кабинет навигациясы",
     "Back to overview": "Шолуға оралу",

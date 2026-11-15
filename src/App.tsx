@@ -75,6 +75,11 @@ const MyProfilePage = lazy(() =>
     default: module.MyProfilePage,
   })),
 );
+const ConnectPage = lazy(() =>
+  import("@/components/workspace/connect-page").then((module) => ({
+    default: module.ConnectPage,
+  })),
+);
 const DashboardView = lazy(() =>
   import("@/components/workspace/dashboard-view").then((module) => ({
     default: module.DashboardView,
@@ -181,6 +186,7 @@ function RouteTitle() {
               "/dashboard": "Overview",
               "/materials": "Shared materials",
               "/my-profile": "My profile",
+              "/connect": "Find students by QR or ID",
               "/discover": "Discover students",
               "/connections": "Connections",
               "/groups": "Study groups",
@@ -426,6 +432,7 @@ export function App() {
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/my-profile" element={<MyProfilePage />} />
+            <Route path="/connect" element={<ConnectPage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
             <Route path="/groups" element={<GroupsPage />} />

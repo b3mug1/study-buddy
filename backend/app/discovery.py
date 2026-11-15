@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Iterable
 from typing import Any
 from uuid import UUID
@@ -328,6 +329,36 @@ def get_student_profile(student_id: UUID, user: CurrentUser) -> DiscoverableStud
         connection_status=state[0] if state else None,
         connection_direction=state[1] if state else None,
     )
+
+
+@router.get("/students/by-code/{student_code}", response_model=DiscoverableStudent)
+def get_student_profile_by_code(student_code: str, user: CurrentUser) -> DiscoverableStudent:
+    code = student_code.strip().upper()
+    if not re.fullmatch(r"SB-[A-F0-9]{12}", code):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Enter a valid Study Buddy ID.",
+        )
+
+    try:
+        profile = (
+            user.db.table("profiles")
+            .select("id")
+            .eq("student_code", code)
+            .maybe_single()
+            .execute()
+            .data
+        )
+    except DatabaseError as error:
+        logger.exception("PostgreSQL failed to look up a student code")
+        raise _database_error("find the student profile") from error
+
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No visible student profile matches this ID.",
+        )
+    return get_student_profile(UUID(profile["id"]), user)
 
 
 @router.get("/connections", response_model=list[ConnectionView])

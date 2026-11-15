@@ -1,5 +1,6 @@
 export type StudentProfile = {
   id: string;
+  student_code: string;
   full_name: string;
   university_name: string;
   major: string;

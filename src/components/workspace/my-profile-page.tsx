@@ -7,6 +7,7 @@ import {
   Languages,
   MapPin,
   Pencil,
+  QrCode,
   ShieldCheck,
   Target,
 } from "lucide-react";
@@ -57,16 +58,24 @@ export function MyProfilePage() {
     <main className="my-profile-page mx-auto max-w-5xl">
       <header className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{profile.university_name}</p>
+          <p className="text-sm text-muted-foreground">
+            {profile.university_name}
+          </p>
           <h1 className="mt-2 text-4xl">{t("My profile")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("View your academic information and study preferences.")}
           </p>
         </div>
-        <Link href="/settings/profile" className="portal-button">
-          <Pencil size={15} aria-hidden="true" />
-          {t("Edit profile")}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/connect" className="portal-button">
+            <QrCode size={15} aria-hidden="true" />
+            {t("My QR & student ID")}
+          </Link>
+          <Link href="/settings/profile" className="portal-button">
+            <Pencil size={15} aria-hidden="true" />
+            {t("Edit profile")}
+          </Link>
+        </div>
       </header>
 
       <section className="profile-identity mt-6">

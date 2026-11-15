@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "@/components/navigation/link";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -148,6 +148,7 @@ export function LoginForm({
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -175,7 +176,15 @@ export function LoginForm({
       });
       return;
     }
-    navigate("/dashboard", { replace: true });
+    const requestedPath = new URLSearchParams(location.search).get("next");
+    let returnTo = "/dashboard";
+    if (requestedPath) {
+      const destination = new URL(requestedPath, window.location.origin);
+      if (destination.origin === window.location.origin) {
+        returnTo = `${destination.pathname}${destination.search}${destination.hash}`;
+      }
+    }
+    navigate(returnTo, { replace: true });
   });
 
   return (
@@ -298,7 +307,10 @@ export function RegisterForm() {
         email,
         password,
       });
-      setMessage({ text: "Check your university email for a verification link before signing in.", tone: "success" });
+      setMessage({
+        text: "Check your university email for a verification link before signing in.",
+        tone: "success",
+      });
     } catch (error) {
       setMessage({
         text:

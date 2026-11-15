@@ -24,6 +24,7 @@ TABLE_COLUMNS: dict[str, set[str]] = {
         "year_of_study",
         "bio",
         "avatar_url",
+        "student_code",
         "is_onboarded",
         "show_in_discovery",
         "created_at",
