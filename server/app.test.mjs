@@ -4,14 +4,14 @@ import test from "node:test";
 
 import { createApp } from "./app.mjs";
 
-function post(port, origin, extraHeaders = {}) {
+function post(port, origin, extraHeaders = {}, action = "register") {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ email: "123456@astanait.edu.kz" });
     const request = http.request(
       {
         host: "127.0.0.1",
         port,
-        path: "/api/auth/register",
+        path: `/api/auth/${action}`,
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,6 +58,15 @@ test("unsafe proxy requests require the configured exact Origin", async () => {
     assert.equal(forwarded, 1);
     assert.equal(response.headers["x-content-type-options"], "nosniff");
     assert.match(response.headers["content-security-policy"], /frame-ancestors 'none'/);
+
+    const removedVerification = await post(
+      port,
+      "https://study.example",
+      {},
+      "verify-email",
+    );
+    assert.equal(removedVerification.statusCode, 404);
+    assert.equal(forwarded, 1);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     globalThis.fetch = oldFetch;

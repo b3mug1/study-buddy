@@ -1,12 +1,8 @@
 import hashlib
 import secrets
-import smtplib
-import ssl
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from email.message import EmailMessage
 from typing import Annotated, Any
-from urllib.parse import urlencode, urlsplit
 from uuid import UUID, uuid4
 
 import jwt
@@ -25,7 +21,6 @@ from app.schemas import (
     RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
-    VerifyEmailRequest,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
@@ -159,7 +154,7 @@ async def get_current_user(
     try:
         with database_connection() as connection:
             user = connection.execute(
-                """select u.id,u.email,u.email_verified
+                """select u.id,u.email
                    from users u join refresh_sessions rs on rs.user_id=u.id
                    where u.id=%s and u.disabled_at is null
                      and rs.id=%s and rs.revoked_at is null
@@ -172,7 +167,7 @@ async def get_current_user(
             detail="Unable to validate the session.",
         ) from error
 
-    if not user or not user["email_verified"]:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Your session is invalid or has expired. Sign in again.",
@@ -227,74 +222,7 @@ def _enforce_auth_rate_limit(
         ) from error
 
 
-def _email_settings():
-    settings = get_settings()
-    if not settings.smtp_host or not settings.smtp_from or not settings.frontend_url:
-        return None
-    frontend = urlsplit(settings.frontend_url)
-    if frontend.scheme != "https" and not (
-        frontend.scheme == "http" and frontend.hostname in {"localhost", "127.0.0.1"}
-    ):
-        raise HTTPException(status_code=503, detail="A secure frontend URL is required.")
-    if (
-        not frontend.hostname
-        or frontend.username
-        or frontend.password
-        or frontend.path not in {"", "/"}
-        or frontend.query
-        or frontend.fragment
-    ):
-        raise HTTPException(status_code=503, detail="FRONTEND_URL must be an origin.")
-    if not settings.smtp_use_tls and settings.smtp_host not in {"localhost", "127.0.0.1"}:
-        raise HTTPException(status_code=503, detail="SMTP TLS is required.")
-    if bool(settings.smtp_username) != bool(settings.smtp_password) or (
-        settings.smtp_username and not settings.smtp_use_tls
-    ):
-        raise HTTPException(status_code=503, detail="Secure SMTP credentials are required.")
-    return settings
-
-
-def _send_verification_email(user_id: UUID, email: str) -> None:
-    settings = get_settings()
-    if not settings.smtp_host or not settings.smtp_from:
-        with database_connection() as connection:
-            connection.execute(
-                "update users set email_verified=true where id=%s",
-                (user_id,),
-            )
-        return
-    settings = _email_settings()
-    token = secrets.token_urlsafe(32)
-    with database_connection() as connection:
-        connection.execute(
-            """insert into email_verification_tokens(user_id,token_hash,expires_at)
-               values (%s,%s,%s)""",
-            (user_id, _token_hash(token), datetime.now(UTC) + timedelta(hours=24)),
-        )
-    link = f"{settings.frontend_url.rstrip('/')}/auth/verify?{urlencode({'token': token})}"
-    message = EmailMessage()
-    message["From"] = settings.smtp_from
-    message["To"] = email
-    message["Subject"] = "Verify your Study Buddy email"
-    message.set_content(
-        "Confirm your university email to activate your account:\n\n"
-        f"{link}\n\nThis link expires in 24 hours."
-    )
-    try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
-            if settings.smtp_use_tls:
-                smtp.starttls(context=ssl.create_default_context())
-            if settings.smtp_username and settings.smtp_password:
-                smtp.login(settings.smtp_username, settings.smtp_password)
-            smtp.send_message(message)
-    except (OSError, smtplib.SMTPException) as error:
-        raise HTTPException(
-            status_code=503,
-            detail="Verification email could not be sent. Try signing in later to resend it.",
-        ) from error
-
-
-@router.post("/register", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(request: RegisterRequest) -> dict[str, str]:
     _settings_with_secret()
     _enforce_auth_rate_limit("register", request.email, 20, timedelta(hours=1))
@@ -302,12 +230,8 @@ def register(request: RegisterRequest) -> dict[str, str]:
     try:
         with database_connection() as connection:
             account = connection.execute(
-                """insert into users(id,email,password_hash,full_name,email_verified)
-                   values (%s,lower(%s),%s,%s,false)
-                   on conflict (email) do update set
-                     password_hash=excluded.password_hash,
-                     full_name=excluded.full_name,updated_at=now()
-                   where users.email_verified=false
+                """insert into users(id,email,password_hash,full_name)
+                   values (%s,lower(%s),%s,%s)
                    returning id""",
                 (
                     new_user_id,
@@ -328,15 +252,6 @@ def register(request: RegisterRequest) -> dict[str, str]:
                    on conflict (id) do update set full_name=excluded.full_name""",
                 (user_id, request.full_name),
             )
-            connection.execute(
-                "delete from email_verification_tokens where user_id=%s",
-                (user_id,),
-            )
-            connection.execute(
-                """update refresh_sessions set revoked_at=now()
-                   where user_id=%s and revoked_at is null""",
-                (user_id,),
-            )
     except DatabaseError as error:
         if error.code == "23505":
             raise HTTPException(
@@ -348,11 +263,7 @@ def register(request: RegisterRequest) -> dict[str, str]:
             detail="Unable to create your account right now.",
         ) from error
 
-    _send_verification_email(user_id, request.email.lower())
-    settings = get_settings()
-    if not settings.smtp_host or not settings.smtp_from:
-        return {"detail": "Account created and verified. You can now log in."}
-    return {"detail": "Check your university email for a verification link."}
+    return {"detail": "Account created. You can now sign in."}
 
 
 @router.post("/login", response_model=AuthTokens)
@@ -361,7 +272,7 @@ def login(request: LoginRequest) -> AuthTokens:
     _enforce_auth_rate_limit("login", request.email, 10, timedelta(hours=1))
     with database_connection() as connection:
         user = connection.execute(
-            """select id,email,password_hash,email_verified,disabled_at
+            """select id,email,password_hash,disabled_at
                from users where email=lower(%s)""",
             (request.email,),
         ).fetchone()
@@ -379,44 +290,6 @@ def login(request: LoginRequest) -> AuthTokens:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email or password is incorrect.",
         ) from None
-    if not user["email_verified"]:
-        _send_verification_email(user["id"], user["email"])
-        raise HTTPException(
-            status_code=403,
-            detail="Check your university email for a verification link. A new link has been sent.",
-        )
-    return _create_tokens(user["id"], user["email"])
-
-
-@router.post("/verify-email", response_model=AuthTokens)
-def verify_email(request: VerifyEmailRequest) -> AuthTokens:
-    _enforce_auth_rate_limit("verify-email", request.token, 10, timedelta(hours=1))
-    with database_connection() as connection:
-        row = connection.execute(
-            """select id,user_id,expires_at,used_at from email_verification_tokens
-               where token_hash=%s for update""",
-            (_token_hash(request.token),),
-        ).fetchone()
-        if not row or row["used_at"] is not None or row["expires_at"] <= datetime.now(UTC):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This verification link is invalid or expired.",
-            )
-        connection.execute("update users set email_verified=true where id=%s", (row["user_id"],))
-        connection.execute(
-            """update refresh_sessions set revoked_at=now()
-               where user_id=%s and revoked_at is null""",
-            (row["user_id"],),
-        )
-        connection.execute(
-            "update email_verification_tokens set used_at=now() where id=%s",
-            (row["id"],),
-        )
-        user = connection.execute(
-            "select id,email from users where id=%s and disabled_at is null", (row["user_id"],)
-        ).fetchone()
-        if not user:
-            raise HTTPException(status_code=401, detail="Account is unavailable.")
     return _create_tokens(user["id"], user["email"])
 
 
@@ -432,7 +305,7 @@ def refresh(request: RefreshRequest) -> AuthTokens:
     with database_connection() as connection:
         session = connection.execute(
             """select rs.id,rs.user_id,rs.expires_at,rs.revoked_at,rs.token_hash,
-                      u.email,u.email_verified,u.disabled_at
+                      u.email,u.disabled_at
                from refresh_sessions rs join users u on u.id=rs.user_id
                where rs.id=%s""",
             (UUID(session_id),),
@@ -443,7 +316,6 @@ def refresh(request: RefreshRequest) -> AuthTokens:
             or session["expires_at"] <= datetime.now(UTC)
             or not secrets.compare_digest(session["token_hash"], _token_hash(request.refresh_token))
             or session["disabled_at"] is not None
-            or not session["email_verified"]
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -520,7 +392,7 @@ def reset_password(request: ResetPasswordRequest) -> None:
 def get_me(user: CurrentUser) -> AuthUserView:
     with database_connection(user.id) as connection:
         row = connection.execute(
-            "select full_name,email,email_verified from users where id=%s",
+            "select full_name,email from users where id=%s",
             (UUID(user.id),),
         ).fetchone()
     if not row:
@@ -528,6 +400,5 @@ def get_me(user: CurrentUser) -> AuthUserView:
     return AuthUserView(
         id=user.id,
         email=row["email"],
-        email_verified=row["email_verified"],
         full_name=row["full_name"],
     )

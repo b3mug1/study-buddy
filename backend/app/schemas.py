@@ -455,10 +455,6 @@ class RefreshRequest(BaseModel):
     refresh_token: Annotated[str, Field(min_length=20, max_length=4096)]
 
 
-class VerifyEmailRequest(BaseModel):
-    token: Annotated[str, Field(min_length=20, max_length=4096)]
-
-
 class ForgotPasswordRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -480,5 +476,4 @@ class AuthTokens(BaseModel):
 class AuthUserView(BaseModel):
     id: str
     email: str
-    email_verified: bool
     full_name: str

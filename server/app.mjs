@@ -136,7 +136,6 @@ export function createApp({ serveStatic = true } = {}) {
   const authEndpoints = new Set([
     "register",
     "login",
-    "verify-email",
     "forgot-password",
     "reset-password",
     "logout",

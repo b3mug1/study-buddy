@@ -51,7 +51,6 @@ async function authenticationRequest(
   }
   return payload;
 }
-
 const emailSchema = z.object({
   email: z
     .string()
@@ -110,7 +109,6 @@ function StatusAlert({
     </div>
   );
 }
-
 function FormTabSwitcher({ active }: { active: "login" | "register" }) {
   const { t } = useI18n();
   return (
@@ -308,7 +306,7 @@ export function RegisterForm() {
         password,
       });
       setMessage({
-        text: "Check your university email for a verification link before signing in.",
+        text: "Account created. You can now sign in.",
         tone: "success",
       });
     } catch (error) {
@@ -559,71 +557,5 @@ export function ResetPasswordForm({ token }: { token: string }) {
         )}
       </button>
     </form>
-  );
-}
-
-export function VerifyEmailForm({ token }: { token: string }) {
-  const { t } = useI18n();
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{
-    text: string;
-    tone: "error" | "success";
-  } | null>(null);
-
-  async function handleVerify() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      if (!token) {
-        throw new Error("This verification link is missing its token.");
-      }
-      await authenticationRequest("verify-email", { token });
-      setMessage({
-        text: "Email verified successfully! Redirecting to profile setup...",
-        tone: "success",
-      });
-      setTimeout(() => {
-        navigate("/onboarding", { replace: true });
-      }, 1000);
-    } catch (error) {
-      setMessage({
-        text:
-          error instanceof Error ? error.message : "Unable to verify email.",
-        tone: "error",
-      });
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {message && (
-        <StatusAlert tone={message.tone}>{t(message.text)}</StatusAlert>
-      )}
-      <p className="text-sm text-muted-foreground">
-        {t("Click below to complete email verification.")}
-      </p>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={handleVerify}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:opacity-80 disabled:opacity-50"
-      >
-        {busy ? (
-          <LoaderCircle className="animate-spin" size={18} />
-        ) : (
-          "Confirm Email"
-        )}
-      </button>
-      <div className="text-center">
-        <Link
-          href="/login"
-          className="text-xs font-semibold text-primary hover:underline"
-        >
-          {t("Return to login")}
-        </Link>
-      </div>
-    </div>
   );
 }

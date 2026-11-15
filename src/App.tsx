@@ -50,11 +50,6 @@ const ResetPasswordForm = lazy(() =>
     default: module.ResetPasswordForm,
   })),
 );
-const VerifyEmailForm = lazy(() =>
-  import("@/components/auth/auth-forms").then((module) => ({
-    default: module.VerifyEmailForm,
-  })),
-);
 const OnboardingContent = lazy(() =>
   import("@/components/profile/onboarding-content").then((module) => ({
     default: module.OnboardingContent,
@@ -181,7 +176,6 @@ function RouteTitle() {
               "/register": "Create your account",
               "/forgot-password": "Reset your password",
               "/reset-password": "Choose a new password",
-              "/auth/verify": "Verify your email",
               "/onboarding": "Set up your profile",
               "/dashboard": "Overview",
               "/materials": "Shared materials",
@@ -207,11 +201,9 @@ function LoginRoute() {
   const resetSuccess = searchParams.get("reset") === "success";
   const error = searchParams.get("error");
   const authError =
-    error === "auth-verify"
-      ? "We couldn't verify that email link. Request a new verification email and try again."
-      : error === "auth-not-configured"
-        ? "Authentication is not configured yet. Check the API and PostgreSQL settings."
-        : undefined;
+    error === "auth-not-configured"
+      ? "Authentication is not configured yet. Check the API and PostgreSQL settings."
+      : undefined;
 
   return (
     <AuthShell
@@ -257,19 +249,6 @@ function ResetPasswordRoute() {
       description="Use at least 8 characters and keep it somewhere safe."
     >
       <ResetPasswordForm token={searchParams.get("token") ?? ""} />
-    </AuthShell>
-  );
-}
-
-function VerifyEmailRoute() {
-  const [searchParams] = useSearchParams();
-  return (
-    <AuthShell
-      eyebrow="One last step"
-      title="Verify your email."
-      description="Confirm your university email address, then set up your Study Buddy profile."
-    >
-      <VerifyEmailForm token={searchParams.get("token") ?? ""} />
     </AuthShell>
   );
 }
@@ -425,7 +404,6 @@ export function App() {
           <Route path="/register" element={<RegisterRoute />} />
           <Route path="/forgot-password" element={<ForgotPasswordRoute />} />
           <Route path="/reset-password" element={<ResetPasswordRoute />} />
-          <Route path="/auth/verify" element={<VerifyEmailRoute />} />
           <Route path="/onboarding" element={<OnboardingRoute />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardView />} />

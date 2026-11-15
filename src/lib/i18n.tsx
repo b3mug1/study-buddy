@@ -469,8 +469,6 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
     Cancel: "Отмена",
     "Choose a timezone-aware start time and invite your connections.":
       "Укажите время с учётом часового пояса и пригласите знакомых.",
-    "Click below to complete email verification.":
-      "Нажмите ниже, чтобы подтвердить адрес почты.",
     Completed: "Завершено",
     "Completed sessions and their notes will appear here.":
       "Здесь появятся проведённые занятия и заметки к ним.",
@@ -1319,8 +1317,6 @@ const translations: Record<Exclude<Locale, "en">, Record<string, string>> = {
     Cancel: "Болдырмау",
     "Choose a timezone-aware start time and invite your connections.":
       "Уақыт белдеуін ескеріп уақытты таңдаңыз да, таныстарыңызды шақырыңыз.",
-    "Click below to complete email verification.":
-      "Поштаны растау үшін төмендегі батырманы басыңыз.",
     Completed: "Аяқталды",
     "Completed sessions and their notes will appear here.":
       "Өткен кездесулер мен оларға жазылған ескертпелер осында көрінеді.",
